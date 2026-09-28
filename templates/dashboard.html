@@ -1,0 +1,197 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard — CareerBot{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Welcome Header -->
+    <div class="card card-custom p-4 mb-4 text-white border-0 position-relative overflow-hidden" style="background: linear-gradient(135deg, var(--primary), var(--accent)) !important;">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <span class="badge bg-white text-primary px-3 py-1.5 rounded-pill fw-semibold small mb-2">Student Dashboard</span>
+                <h2 class="fw-bold mb-1">Welcome back, {{ user.full_name or user.username }}! 👋</h2>
+                <p class="mb-0 text-white-50">Here is your personalized career overview based on your skills, job matches, and resume profile.</p>
+            </div>
+            <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                <a href="{{ url_for('chat') }}" class="btn btn-light text-primary fw-bold rounded-pill px-4 d-inline-flex align-items-center gap-2">
+                    <i data-lucide="message-square-text" style="width: 18px; height: 18px;"></i> Open AI Chat
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Metrics Summary Grid -->
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-lg-3">
+            <div class="stat-card">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="text-muted small fw-semibold">Profile Skills</span>
+                    <div class="stat-icon bg-primary-light text-primary" style="width:36px; height:36px;">
+                        <i data-lucide="cpu" style="width: 18px; height: 18px;"></i>
+                    </div>
+                </div>
+                <h3 class="fw-bold mb-0 text-main">{{ skills_count }}</h3>
+                <small class="text-muted">Normalized skills</small>
+            </div>
+        </div>
+
+        <div class="col-6 col-lg-3">
+            <div class="stat-card">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="text-muted small fw-semibold">Job Matches</span>
+                    <div class="stat-icon bg-success-bg text-success" style="width:36px; height:36px;">
+                        <i data-lucide="briefcase" style="width: 18px; height: 18px;"></i>
+                    </div>
+                </div>
+                {% if has_resume and skills_count > 0 %}
+                <h3 class="fw-bold mb-0 text-main">{{ matching_jobs_count }} <span class="fs-6 text-muted font-normal">/ {{ total_jobs }}</span></h3>
+                <small class="text-success fw-semibold">Moderate / Strong match</small>
+                {% else %}
+                <h3 class="fw-bold mb-0 text-muted fs-6" style="line-height: 1.4;">Upload resume to calculate matches</h3>
+                <small class="text-muted"><a href="{{ url_for('resume') }}" class="text-primary text-decoration-none">Upload resume</a></small>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="col-6 col-lg-3">
+            <div class="stat-card">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="text-muted small fw-semibold">Profile Completion</span>
+                    <div class="stat-icon bg-warning-bg text-warning" style="width:36px; height:36px;">
+                        <i data-lucide="pie-chart" style="width: 18px; height: 18px;"></i>
+                    </div>
+                </div>
+                <h3 class="fw-bold mb-0 text-main">{{ completion_percentage }}%</h3>
+                <div class="progress progress-custom mt-2">
+                    <div class="progress-bar-custom" data-progress="{{ completion_percentage }}"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-6 col-lg-3">
+            <div class="stat-card">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="text-muted small fw-semibold">Resume Status</span>
+                    <div class="stat-icon bg-primary-light text-accent" style="width:36px; height:36px;">
+                        <i data-lucide="file-check" style="width: 18px; height: 18px;"></i>
+                    </div>
+                </div>
+                <h3 class="fw-bold mb-0 fs-5 text-main">
+                    {% if latest_resume %}
+                    Uploaded
+                    {% else %}
+                    Not Uploaded
+                    {% endif %}
+                </h3>
+                <small class="text-muted">
+                    {% if latest_resume %}
+                    {{ latest_resume.original_filename }}
+                    {% else %}
+                    <a href="{{ url_for('resume') }}" class="text-primary text-decoration-none">Upload now</a>
+                    {% endif %}
+                </small>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Top Recommended Jobs -->
+        <div class="col-lg-8">
+            <div class="card card-custom p-4 h-100">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="fw-bold mb-0 text-main d-flex align-items-center gap-2">
+                        <i data-lucide="sparkles" class="text-warning" style="width: 20px; height: 20px;"></i> Top Recommended Jobs
+                    </h5>
+                    <a href="{{ url_for('jobs') }}" class="btn btn-sm btn-outline-custom">View All Jobs</a>
+                </div>
+
+                {% if top_recommendations %}
+                <div class="row g-3">
+                    {% for job in top_recommendations %}
+                    <div class="col-12">
+                        <div class="p-3 border border-color rounded-3 bg-card hover-shadow transition">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <div>
+                                    <h6 class="fw-bold mb-1 text-main">
+                                        <a href="{{ url_for('job_details', job_id=job.job_id) }}" class="text-decoration-none text-main hover-primary">
+                                            {{ job.title }}
+                                        </a>
+                                    </h6>
+                                    <span class="text-muted small d-inline-flex align-items-center gap-1">
+                                        <i data-lucide="building-2" style="width: 14px; height: 14px;"></i> {{ job.company }} &bull; {{ job.location }} &bull; {{ job.experience }}
+                                    </span>
+                                </div>
+                                {% if has_resume and job.match_percentage is not none %}
+                                <span class="match-badge {% if job.match_band == 'Strong Match' %}match-strong{% elif job.match_band == 'Moderate Match' %}match-moderate{% else %}match-limited{% endif %}">
+                                    {{ job.match_percentage }}% Match
+                                </span>
+                                {% else %}
+                                <span class="match-badge match-limited">
+                                    Upload resume to calculate match
+                                </span>
+                                {% endif %}
+                            </div>
+
+                            <div class="d-flex flex-wrap align-items-center gap-1 mt-2">
+                                <span class="small text-muted me-1">Matching Skills:</span>
+                                {% for skill in job.matching_skills[:5] %}
+                                <span class="skill-chip matched d-inline-flex align-items-center gap-1">
+                                    <i data-lucide="check" style="width: 12px; height: 12px;"></i>{{ skill }}
+                                </span>
+                                {% endfor %}
+
+                                {% if job.missing_skills %}
+                                <span class="small text-muted ms-2 me-1">Missing:</span>
+                                {% for skill in job.missing_skills[:3] %}
+                                <span class="skill-chip missing">{{ skill }}</span>
+                                {% endfor %}
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center py-4 text-muted">
+                    <i data-lucide="inbox" class="mx-auto mb-2 opacity-50" style="width: 36px; height: 36px;"></i>
+                    <p>No job recommendations found yet. Upload your resume to calculate personalized matches!</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Sidebar: Active Skills & Missing Gaps -->
+        <div class="col-lg-4">
+            <div class="card card-custom p-4 mb-4">
+                <h5 class="fw-bold mb-3 text-main d-flex align-items-center gap-2">
+                    <i data-lucide="zap" class="text-primary" style="width: 18px; height: 18px;"></i> Your Extracted Skills
+                </h5>
+                {% if profile.skills %}
+                <div class="d-flex flex-wrap gap-1 mb-3">
+                    {% for skill in profile.skills %}
+                    <span class="skill-chip">{{ skill }}</span>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="text-muted small">No skills detected yet. <a href="{{ url_for('resume') }}">Upload your resume</a> to extract profile skills.</p>
+                {% endif %}
+            </div>
+
+            <div class="card card-custom p-4">
+                <h5 class="fw-bold mb-3 text-main d-flex align-items-center gap-2">
+                    <i data-lucide="compass" class="text-accent" style="width: 18px; height: 18px;"></i> Target Roles & Roadmap
+                </h5>
+                {% if profile.target_roles %}
+                <p class="small text-muted mb-2">Target Roles: <strong>{{ profile.target_roles|join(', ') }}</strong></p>
+                {% else %}
+                <p class="small text-muted mb-2">Target Role: <strong>Machine Learning Engineer</strong> (Default)</p>
+                {% endif %}
+                <a href="{{ url_for('roadmap') }}" class="btn btn-outline-custom btn-sm w-100 mt-2 d-inline-flex align-items-center justify-content-center gap-2">
+                    <i data-lucide="map" style="width: 14px; height: 14px;"></i> View Learning Roadmap
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

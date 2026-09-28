@@ -1,0 +1,7 @@
+{
+  "database": "connected",
+  "fallback_mode": false,
+  "gemini": "available",
+  "nlp": "ready",
+  "status": "healthy"
+}

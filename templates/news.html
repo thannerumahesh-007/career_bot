@@ -1,0 +1,195 @@
+{% extends "base.html" %}
+
+{% block title %}Corporate & Technology News — CareerBot{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Hero Header Banner -->
+    <div class="card card-custom p-4 mb-4 text-white border-0 position-relative overflow-hidden" style="background: linear-gradient(135deg, #0f172a, #1e293b, var(--primary)) !important;">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <span class="badge bg-white text-primary px-3 py-1.5 rounded-pill fw-semibold small mb-2 d-inline-flex align-items-center gap-1">
+                    <i data-lucide="newspaper" style="width: 14px; height: 14px;"></i> Real-World Corporate Intelligence
+                </span>
+                <h2 class="fw-bold mb-1">Corporate & Technology News 🌐</h2>
+                <p class="mb-0 text-white-50">
+                    Live updates on major companies, tech innovators, Indian IT giants, funding rounds, leadership changes, and hiring trends worldwide.
+                </p>
+            </div>
+            <div class="col-md-4 text-md-end mt-3 mt-md-0 d-flex flex-column align-items-md-end gap-2">
+                <button id="refreshNewsBtn" class="btn btn-light text-primary fw-bold rounded-pill px-4 d-inline-flex align-items-center gap-2 shadow-sm">
+                    <i data-lucide="refresh-cw" id="refreshIcon" style="width: 16px; height: 16px;"></i> Refresh News
+                </button>
+                <small class="text-white-50" id="lastUpdatedText">
+                    {% if last_updated %}Updated: {{ last_updated }}{% endif %}
+                </small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Search & Filter Controls Card -->
+    <div class="card card-custom p-3 p-md-4 mb-4">
+        <!-- Search Input Bar -->
+        <form id="newsSearchForm" class="row g-2 mb-3" onsubmit="event.preventDefault(); handleNewsSearch();">
+            <div class="col-12 col-md-9">
+                <div class="input-group">
+                    <span class="input-group-text bg-subtle border-color text-muted">
+                        <i data-lucide="search" style="width: 16px; height: 16px;"></i>
+                    </span>
+                    <input type="text" id="newsSearchInput" class="form-control bg-subtle text-main border-color" 
+                           placeholder="Search companies, tech giants, topics (e.g., NVIDIA, TCS, Google, Layoffs, AI)..." 
+                           value="{{ search_query }}">
+                    <button class="btn btn-outline-custom" type="button" id="clearSearchBtn" title="Clear search" onclick="clearNewsSearch()">
+                        <i data-lucide="x" style="width: 14px; height: 14px;"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="col-12 col-md-3">
+                <button type="submit" class="btn btn-primary-custom w-100 d-inline-flex align-items-center justify-content-center gap-2">
+                    <i data-lucide="filter" style="width: 16px; height: 16px;"></i> Search News
+                </button>
+            </div>
+        </form>
+
+        <!-- Category Pills Bar -->
+        <div class="d-flex align-items-center gap-2 flex-wrap" id="categoryFilterBar">
+            <span class="text-muted small fw-semibold me-1 d-none d-md-inline">Category:</span>
+            {% for cat_id, cat_info in categories.items() %}
+            <button type="button" 
+                    class="btn btn-sm category-pill-btn {% if active_category == cat_id %}btn-primary-custom active{% else %}btn-outline-custom{% endif %}"
+                    data-category="{{ cat_id }}"
+                    onclick="switchNewsCategory('{{ cat_id }}')">
+                <i data-lucide="{{ cat_info.icon }}" style="width: 14px; height: 14px;" class="me-1"></i>
+                {{ cat_info.label }}
+            </button>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Status & Error Alert Container -->
+    <div id="newsAlertContainer">
+        {% if news_status == 'error' %}
+        <div class="alert {% if error_type == 'rate_limit' %}alert-warning{% else %}alert-danger{% endif %} border-0 shadow-sm d-flex align-items-center justify-content-between p-3 mb-4 rounded-3">
+            <div class="d-flex align-items-center gap-2">
+                <i data-lucide="alert-triangle" style="width: 20px; height: 20px;" class="flex-shrink-0"></i>
+                <div>
+                    <strong>News Service Notice:</strong> {{ error_message }}
+                </div>
+            </div>
+            <button class="btn btn-sm btn-outline-dark ms-3" onclick="loadNews(true)">Try Again</button>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- News Results Header -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="fw-bold mb-0 text-main d-flex align-items-center gap-2">
+            <i data-lucide="flame" class="text-warning" style="width: 18px; height: 18px;"></i>
+            <span id="resultsHeading">Latest Corporate Headlines</span>
+        </h5>
+        <span class="badge bg-subtle text-muted border-color px-2.5 py-1" id="articleCountBadge">
+            {{ total_articles }} Articles
+        </span>
+    </div>
+
+    <!-- Loading Spinner (Hidden by default) -->
+    <div id="newsLoadingSpinner" class="text-center py-5 d-none">
+        <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
+            <span class="visually-hidden">Loading news...</span>
+        </div>
+        <p class="text-muted mt-3 small">Fetching real-time corporate updates from verified news sources...</p>
+    </div>
+
+    <!-- News Grid Container -->
+    <div class="row g-4" id="newsGrid">
+        {% if articles %}
+            {% for item in articles %}
+            <div class="col-md-6 col-lg-4 d-flex">
+                <div class="card card-custom h-100 w-100 p-0 overflow-hidden d-flex flex-column hover-shadow transition">
+                    {% if item.image_url %}
+                    <div class="news-card-img-wrapper" style="height: 160px; overflow: hidden; background-color: var(--bg-subtle);">
+                        <img src="{{ item.image_url }}" alt="{{ item.title }}" 
+                             class="w-100 h-100 object-fit-cover" 
+                             loading="lazy" 
+                             onerror="this.onerror=null; this.closest('.news-card-img-wrapper').style.display='none';">
+                    </div>
+                    {% endif %}
+
+                    <div class="p-4 d-flex flex-column flex-grow-1">
+                        <!-- Metadata Badges -->
+                        <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-1">
+                            <span class="badge bg-primary-light text-primary fw-semibold small">
+                                <i data-lucide="building" style="width: 12px; height: 12px;" class="me-1"></i>{{ item.source }}
+                            </span>
+                            <span class="badge bg-subtle text-muted border-color small">
+                                <i data-lucide="clock" style="width: 12px; height: 12px;" class="me-1"></i>{{ item.published_relative }}
+                            </span>
+                        </div>
+
+                        <!-- Category Tag -->
+                        <div class="mb-2">
+                            <span class="badge bg-subtle text-accent border-color" style="font-size: 0.72rem;">
+                                {{ item.category }}
+                            </span>
+                        </div>
+
+                        <!-- Headline -->
+                        <h6 class="fw-bold mb-2 text-main leading-snug">
+                            <a href="{{ item.url }}" target="_blank" rel="noopener noreferrer" class="text-main text-decoration-none hover-primary">
+                                {{ item.title }}
+                            </a>
+                        </h6>
+
+                        <!-- Description -->
+                        <p class="text-muted small line-clamp-3 mb-3 flex-grow-1">
+                            {{ item.description }}
+                        </p>
+
+                        <!-- AI Executive Takeaway Box (collapsible) -->
+                        <div class="ai-takeaway-container mb-3 d-none" id="aiTakeaway_{{ loop.index }}">
+                            <div class="p-2.5 bg-subtle rounded-3 border border-color">
+                                <small class="text-primary fw-semibold d-flex align-items-center gap-1 mb-1">
+                                    <i data-lucide="sparkles" style="width: 13px; height: 13px;"></i> Gemini Executive Takeaway:
+                                </small>
+                                <p class="small text-main mb-0 takeaway-content" style="font-size: 0.82rem;"></p>
+                            </div>
+                        </div>
+
+                        <!-- Action Controls Footer -->
+                        <div class="pt-3 border-top border-color d-flex justify-content-between align-items-center mt-auto">
+                            <button type="button" 
+                                    class="btn btn-sm btn-subtle text-primary ai-summary-btn d-inline-flex align-items-center gap-1"
+                                    data-target="aiTakeaway_{{ loop.index }}"
+                                    data-title="{{ item.title|e }}"
+                                    data-description="{{ item.description|e }}"
+                                    onclick="triggerAiSummary(this)"
+                                    title="Get AI executive summary for this article">
+                                <i data-lucide="sparkles" style="width: 13px; height: 13px;"></i> AI Takeaway
+                            </button>
+
+                            <a href="{{ item.url }}" target="_blank" rel="noopener noreferrer" 
+                               class="btn btn-sm btn-primary-custom d-inline-flex align-items-center gap-1">
+                                Read Full Article <i data-lucide="external-link" style="width: 13px; height: 13px;"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        {% elif news_status != 'error' %}
+            <div class="col-12">
+                <div class="card card-custom p-5 text-center text-muted">
+                    <i data-lucide="newspaper" style="width: 48px; height: 48px;" class="mx-auto mb-3 opacity-50"></i>
+                    <h5>No Articles Found</h5>
+                    <p class="small mb-3">No current corporate news matched your criteria. Try another search keyword or switch categories.</p>
+                    <button class="btn btn-outline-custom btn-sm mx-auto" onclick="clearNewsSearch()">Show All News</button>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/news.js') }}?v=2026"></script>
+{% endblock %}

@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+
+{% block title %}Jobs Matched to Your Resume — CareerBot{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+        <div>
+            <span class="badge bg-primary-light text-primary px-3 py-1.5 rounded-pill fw-semibold small mb-2">
+                <i data-lucide="file-check" style="width: 14px; height: 14px;" class="me-1"></i> Resume Matching Engine
+            </span>
+            <h3 class="fw-bold mb-1 text-main">Jobs Matched to Your Resume</h3>
+            <p class="text-muted small mb-0">Personalized recommendations based on your resume, extracted skills, and career profile.</p>
+        </div>
+
+        <div>
+            <a href="{{ url_for('jobs') }}" class="btn btn-outline-custom">
+                <i data-lucide="arrow-left" style="width: 16px; height: 16px;" class="me-1"></i> All Catalog Jobs
+            </a>
+        </div>
+    </div>
+
+    <!-- Active Resume Info Banner -->
+    <div class="card card-custom p-3 mb-4 bg-surface">
+        <div class="d-flex align-items-center justify-content-between">
+            <div class="d-flex align-items-center gap-3">
+                <div class="stat-icon bg-primary-light text-primary" style="width: 44px; height: 44px;">
+                    <i data-lucide="file-text" style="width: 22px; height: 22px;"></i>
+                </div>
+                <div>
+                    <span class="small text-muted fw-semibold">Active Resume Document Used:</span>
+                    <h6 class="fw-bold mb-0 text-main">
+                        {% if active_resume %}
+                        {{ active_resume.original_filename }} <span class="badge bg-success-bg text-success ms-2 font-normal small">Active</span>
+                        {% else %}
+                        No resume uploaded yet &bull; <a href="{{ url_for('resume') }}" class="text-primary text-decoration-none">Upload Resume Now</a>
+                        {% endif %}
+                    </h6>
+                </div>
+            </div>
+
+            {% if profile.skills %}
+            <div class="d-none d-md-block text-end">
+                <span class="small text-muted d-block">Skills Extracted from Resume:</span>
+                <span class="fw-bold text-primary">{{ profile.skills|length }} Skills Active</span>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Resume Job Matches List -->
+    {% if results %}
+    <div class="row g-3">
+        {% for job in results %}
+        <div class="col-md-6">
+            <div class="card card-custom h-100 p-4">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <div>
+                        <span class="badge bg-primary-light text-primary mb-1 small">{{ job.job_type }} &bull; {{ job.experience }}</span>
+                        <h5 class="fw-bold mb-1 text-main">
+                            <a href="{{ url_for('job_details', job_id=job.job_id) }}" class="text-decoration-none text-main hover-primary">
+                                {{ job.title }}
+                            </a>
+                        </h5>
+                        <p class="text-muted small mb-0"><i data-lucide="building" style="width: 14px; height: 14px;" class="me-1"></i>{{ job.company }} &bull; {{ job.location }}</p>
+                    </div>
+                    {% if has_resume and job.match_percentage is not none %}
+                    <span class="match-badge {% if job.match_band == 'Strong Match' %}match-strong{% elif job.match_band == 'Moderate Match' %}match-moderate{% else %}match-limited{% endif %}">
+                        {{ job.match_percentage }}% Match
+                    </span>
+                    {% else %}
+                    <span class="match-badge match-limited">
+                        Upload resume to calculate match
+                    </span>
+                    {% endif %}
+                </div>
+
+                <!-- Explanation Box -->
+                <div class="p-3 bg-subtle rounded-3 mb-3 border border-color">
+                    <small class="text-muted d-block fw-semibold mb-1"><i data-lucide="sparkles" style="width: 14px; height: 14px;" class="text-primary me-1"></i>Why this matches your resume:</small>
+                    <p class="small text-main mb-0">Your resume contains <strong>{{ job.matching_skills[:3]|join(', ') }}</strong>, which directly match this role's core requirements.</p>
+                </div>
+
+                <div class="mb-3">
+                    <div class="small text-muted mb-1 fw-semibold">Matching Resume Skills:</div>
+                    <div class="d-flex flex-wrap gap-1 mb-2">
+                        {% for skill in job.matching_skills[:5] %}
+                        <span class="skill-chip matched"><i data-lucide="check" style="width: 12px; height: 12px;"></i> {{ skill }}</span>
+                        {% endfor %}
+                    </div>
+
+                    {% if job.missing_skills %}
+                    <div class="small text-muted mb-1 fw-semibold">Skills to Improve:</div>
+                    <div class="d-flex flex-wrap gap-1">
+                        {% for skill in job.missing_skills[:3] %}
+                        <span class="skill-chip missing">• {{ skill }}</span>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+
+                <div class="mt-auto pt-3 border-top border-color d-flex justify-content-between align-items-center">
+                    <button onclick="toggleSaveJob('{{ job.job_id }}', this)" data-saved="{% if job.is_saved %}true{% else %}false{% endif %}" class="btn btn-sm {% if job.is_saved %}btn-primary-custom{% else %}btn-outline-custom{% endif %}">
+                        <i data-lucide="{% if job.is_saved %}bookmark-check{% else %}bookmark{% endif %}" style="width: 14px; height: 14px;"></i>
+                        {% if job.is_saved %}Saved{% else %}Save Job{% endif %}
+                    </button>
+
+                    <a href="{{ url_for('job_details', job_id=job.job_id) }}" class="btn btn-sm btn-outline-custom">
+                        View Job <i data-lucide="arrow-right" style="width: 14px; height: 14px;" class="ms-1"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="card card-custom p-5 text-center text-muted">
+        <i data-lucide="file-warning" style="width: 48px; height: 48px;" class="mx-auto mb-3 text-warning"></i>
+        <h5>No Strong Resume Matches Found</h5>
+        <p class="small mb-3">Upload your resume or add more skills to your profile to get personalized recommendations.</p>
+        <a href="{{ url_for('resume') }}" class="btn btn-primary-custom px-4 mx-auto">Upload Resume Now</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

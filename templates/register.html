@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+
+{% block title %}Create Account — CareerBot{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-7 col-lg-6">
+            <div class="card card-custom p-4 p-md-5">
+                <div class="text-center mb-4">
+                    <div class="navbar-brand-icon mx-auto mb-3" style="width: 52px; height: 52px;">
+                        <i data-lucide="user-plus" style="width: 28px; height: 28px;"></i>
+                    </div>
+                    <h3 class="fw-bold text-main">Join CareerBot</h3>
+                    <p class="text-muted small">Create your account to start receiving personalized job matches, skill gap insights, and AI career guidance.</p>
+                </div>
+
+                <form action="{{ url_for('register') }}" method="POST" autocomplete="off">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+                    <div class="mb-3">
+                        <label for="full_name" class="form-label fw-semibold small text-muted">Full Name</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-subtle border-end-0 text-muted"><i data-lucide="user-check" style="width: 16px; height: 16px;"></i></span>
+                            <input type="text" class="form-control border-start-0 ps-0" id="full_name" name="full_name" placeholder="Alex Rivers" required autofocus>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="email" class="form-label fw-semibold small text-muted">Email Address</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-subtle border-end-0 text-muted"><i data-lucide="mail" style="width: 16px; height: 16px;"></i></span>
+                                <input type="email" class="form-control border-start-0 ps-0" id="email" name="email" placeholder="alex@university.edu" required>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label for="username" class="form-label fw-semibold small text-muted">Username</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-subtle border-end-0 text-muted"><i data-lucide="at-sign" style="width: 16px; height: 16px;"></i></span>
+                                <input type="text" class="form-control border-start-0 ps-0" id="username" name="username" placeholder="alexrivers" required minlength="3">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="password" class="form-label fw-semibold small text-muted">Password (8+ chars)</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-subtle border-end-0 text-muted"><i data-lucide="lock" style="width: 16px; height: 16px;"></i></span>
+                                <input type="password" class="form-control border-start-0 ps-0" id="password" name="password" placeholder="••••••••" required minlength="8">
+                            </div>
+                        </div>
+
+                        <div class="col-md-6 mb-4">
+                            <label for="confirm_password" class="form-label fw-semibold small text-muted">Confirm Password</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-subtle border-end-0 text-muted"><i data-lucide="shield-check" style="width: 16px; height: 16px;"></i></span>
+                                <input type="password" class="form-control border-start-0 ps-0" id="confirm_password" name="confirm_password" placeholder="••••••••" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary-custom w-100 py-2.5 mb-3 d-inline-flex align-items-center justify-content-center gap-2">
+                        Create Account <i data-lucide="arrow-right" style="width: 18px; height: 18px;"></i>
+                    </button>
+                </form>
+
+                <div class="text-center mt-3 pt-3 border-top border-color">
+                    <p class="small text-muted mb-0">Already have an account? <a href="{{ url_for('login') }}" class="fw-semibold text-primary text-decoration-none">Sign In</a></p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+
+{% block title %}CareerBot — Build Your Career With AI{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="py-5 text-center position-relative overflow-hidden">
+    <div class="container py-4">
+        <div class="row justify-content-center">
+            <div class="col-lg-9 col-xl-8">
+                <span class="badge bg-primary-light text-primary px-3 py-2 rounded-pill fw-semibold mb-3 d-inline-flex align-items-center gap-1.5">
+                    <i data-lucide="sparkles" style="width: 16px; height: 16px;"></i> AI-Powered Career Assistant
+                </span>
+                <h1 class="display-4 fw-bold text-main mb-3">
+                    Build Your Tech Career <br><span class="text-primary">Grounded in Real Data</span>
+                </h1>
+                <p class="lead text-muted mb-4 px-md-4">
+                    Discover matching jobs, analyze your resume sections, identify critical skill gaps, and generate customized step-by-step career roadmaps—all in one private, secure platform.
+                </p>
+                <div class="d-flex justify-content-center gap-3 mb-5">
+                    {% if g.current_user %}
+                    <a href="{{ url_for('dashboard') }}" class="btn btn-primary-custom btn-lg d-inline-flex align-items-center gap-2">
+                        Go to Dashboard <i data-lucide="arrow-right" style="width: 18px; height: 18px;"></i>
+                    </a>
+                    {% else %}
+                    <a href="{{ url_for('register') }}" class="btn btn-primary-custom btn-lg d-inline-flex align-items-center gap-2">
+                        Get Started Free <i data-lucide="rocket" style="width: 18px; height: 18px;"></i>
+                    </a>
+                    <a href="{{ url_for('login') }}" class="btn btn-outline-custom btn-lg">
+                        Sign In
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Feature Grid -->
+        <div class="row g-4 mt-2">
+            <div class="col-md-6 col-lg-3">
+                <div class="card card-custom h-100 p-4 text-start">
+                    <div class="stat-icon bg-primary-light text-primary mb-3">
+                        <i data-lucide="message-square" style="width: 20px; height: 20px;"></i>
+                    </div>
+                    <h5 class="fw-bold text-main">AI Career Chat</h5>
+                    <p class="text-muted small mb-0">Conversational interface powered by NLP intent extraction and grounded local job market data.</p>
+                </div>
+            </div>
+
+            <div class="col-md-6 col-lg-3">
+                <div class="card card-custom h-100 p-4 text-start">
+                    <div class="stat-icon bg-success-bg text-success mb-3">
+                        <i data-lucide="target" style="width: 20px; height: 20px;"></i>
+                    </div>
+                    <h5 class="fw-bold text-main">Multi-Factor Matching</h5>
+                    <p class="text-muted small mb-0">Transparent 4-component scoring: Skill overlap, TF-IDF vector similarity, domain interest, & experience fit.</p>
+                </div>
+            </div>
+
+            <div class="col-md-6 col-lg-3">
+                <div class="card card-custom h-100 p-4 text-start">
+                    <div class="stat-icon bg-warning-bg text-warning mb-3">
+                        <i data-lucide="file-code" style="width: 20px; height: 20px;"></i>
+                    </div>
+                    <h5 class="fw-bold text-main">Resume Parsing</h5>
+                    <p class="text-muted small mb-0">PDF/DOCX section parser automatically populating skills, education, and experience into your profile.</p>
+                </div>
+            </div>
+
+            <div class="col-md-6 col-lg-3">
+                <div class="card card-custom h-100 p-4 text-start">
+                    <div class="stat-icon bg-primary-light text-accent mb-3">
+                        <i data-lucide="compass" style="width: 20px; height: 20px;"></i>
+                    </div>
+                    <h5 class="fw-bold text-main">Career Roadmap</h5>
+                    <p class="text-muted small mb-0">Customized step-by-step learning milestones to bridge skill gaps for your target roles.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
+

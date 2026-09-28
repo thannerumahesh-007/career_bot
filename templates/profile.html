@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+
+{% block title %}My Profile — CareerBot{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card card-custom p-4 p-md-5">
+                <div class="d-flex align-items-center gap-3 mb-4">
+                    <div class="stat-icon bg-primary-light text-primary" style="width: 52px; height: 52px;">
+                        <i data-lucide="user-check" style="width: 26px; height: 26px;"></i>
+                    </div>
+                    <div>
+                        <h3 class="fw-bold mb-0 text-main">Career Profile</h3>
+                        <p class="text-muted small mb-0">Update your background, skills, and target roles to personalize CareerBot matching.</p>
+                    </div>
+                </div>
+
+                <form action="{{ url_for('profile') }}" method="POST">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold small text-muted">Full Name</label>
+                            <input type="text" class="form-control" name="full_name" value="{{ user.full_name }}" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold small text-muted">Email Address (Read-only)</label>
+                            <input type="email" class="form-control bg-subtle" value="{{ user.email }}" readonly>
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold small text-muted">Education Degree</label>
+                            <input type="text" class="form-control" name="education" value="{{ profile.education }}" placeholder="e.g. B.Tech Computer Science">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold small text-muted">Experience Level</label>
+                            <select class="form-select" name="experience">
+                                <option value="Fresher" {% if profile.experience == 'Fresher' %}selected{% endif %}>Fresher (0-1 year)</option>
+                                <option value="Junior Developer" {% if profile.experience == 'Junior Developer' %}selected{% endif %}>Junior Developer (1-3 years)</option>
+                                <option value="Mid-Level" {% if profile.experience == 'Mid-Level' %}selected{% endif %}>Mid-Level (3-5 years)</option>
+                                <option value="Senior" {% if profile.experience == 'Senior' %}selected{% endif %}>Senior (5+ years)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small text-muted">Technical Skills (Comma separated)</label>
+                        <textarea class="form-control" name="skills" rows="3" placeholder="Python, SQL, Machine Learning, Docker, PyTorch...">{{ profile.skills|join(', ') }}</textarea>
+                        <small class="text-muted" style="font-size: 0.75rem;">CareerBot automatically normalizes aliases (e.g. ML &rarr; Machine Learning, JS &rarr; JavaScript).</small>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small text-muted">Domain Interests (Comma separated)</label>
+                        <input type="text" class="form-control" name="interests" value="{{ profile.interests|join(', ') }}" placeholder="Artificial Intelligence, Web Development, Data Science">
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label fw-semibold small text-muted">Target Career Roles (Comma separated)</label>
+                        <input type="text" class="form-control" name="target_roles" value="{{ profile.target_roles|join(', ') }}" placeholder="Machine Learning Engineer, Data Analyst, Python Developer">
+                    </div>
+
+                    <div class="d-flex gap-3">
+                        <button type="submit" class="btn btn-primary-custom px-4">
+                            <i data-lucide="save" style="width: 16px; height: 16px;" class="me-1"></i> Save Profile
+                        </button>
+                        <a href="{{ url_for('dashboard') }}" class="btn btn-outline-custom">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

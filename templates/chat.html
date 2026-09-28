@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+
+{% block title %}CareerBot AI Assistant{% endblock %}
+
+{% block content %}
+<div class="container py-3">
+    <div class="chat-container">
+        <!-- Chat Header Controls -->
+        <div class="d-flex justify-content-between align-items-center pb-3 border-bottom border-color mb-2">
+            <div class="d-flex align-items-center gap-2">
+                <div class="navbar-brand-icon" style="width: 34px; height: 34px;">
+                    <i data-lucide="bot" style="width: 20px; height: 20px;"></i>
+                </div>
+                <div>
+                    <h6 class="fw-bold mb-0 text-main">CareerBot AI Assistant</h6>
+                    <small class="text-muted">NLP Intent Engine + Local Grounded Matching</small>
+                </div>
+            </div>
+
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+                <!-- Voice Language Selector -->
+                <select id="voiceLangSelect" class="form-select form-select-sm bg-card text-main border-color" style="width: 135px; font-size: 0.75rem;" title="Select Speech Recognition Language">
+                    <option value="en-IN" selected>English (IN)</option>
+                    <option value="en-US">English (US)</option>
+                    <option value="te-IN">Telugu (IN)</option>
+                    <option value="hi-IN">Hindi (IN)</option>
+                </select>
+
+                <!-- Voice Mode Toggle Switch -->
+                <div class="form-check form-switch m-0 d-flex align-items-center gap-2" title="Toggle Auto Read-Aloud Voice Mode">
+                    <input class="form-check-input" type="checkbox" id="voiceModeToggle">
+                    <label class="form-check-label small text-muted font-semibold" for="voiceModeToggle">
+                        <i data-lucide="volume-2" style="width: 16px; height: 16px;" class="text-primary me-1"></i> Voice Mode
+                    </label>
+                </div>
+
+                <!-- Stop Speaking Button -->
+                <button class="btn btn-sm btn-outline-danger d-none" id="stopSpeakingBtn" onclick="stopSpeechSynthesis()" title="Stop Voice Playback">
+                    <i data-lucide="square" style="width: 12px; height: 12px;" class="me-1"></i> Stop Speaking
+                </button>
+
+                <button class="btn btn-sm btn-outline-custom" id="clearChatBtn" title="Clear Chat Stream">
+                    <i data-lucide="trash-2" style="width: 14px; height: 14px;" class="me-1"></i> Clear
+                </button>
+            </div>
+        </div>
+
+
+        <!-- Chat Stream Window -->
+        <div class="chat-history-stream" id="chatStream">
+            <!-- Empty State Prompt Chips -->
+            <div id="emptyState" class="text-center py-5 {% if history %}d-none{% endif %}">
+                <div class="navbar-brand-icon mx-auto mb-3" style="width: 56px; height: 56px;">
+                    <i data-lucide="sparkles" style="width: 28px; height: 28px;"></i>
+                </div>
+                <h4 class="fw-bold text-main mb-2">What can I help you with today?</h4>
+                <p class="text-muted small mb-4">Click a suggested prompt below or use voice/text to ask any career query.</p>
+
+                <div class="row g-2 justify-content-center max-w-700 mx-auto">
+                    <div class="col-md-6">
+                        <div class="prompt-chip" data-prompt="Find Python and SQL developer jobs for me">
+                            <div class="fw-semibold text-main mb-1 d-flex align-items-center gap-2">
+                                <i data-lucide="search" style="width: 16px; height: 16px;" class="text-primary"></i> Find Jobs
+                            </div>
+                            <div class="text-muted small">Search postings matching my skills</div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="prompt-chip" data-prompt="What skills am I missing for Data Science roles?">
+                            <div class="fw-semibold text-main mb-1 d-flex align-items-center gap-2">
+                                <i data-lucide="zap" style="width: 16px; height: 16px;" class="text-warning"></i> Skill Gap Analysis
+                            </div>
+                            <div class="text-muted small">Analyze required vs current skills</div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="prompt-chip" data-prompt="Show career roadmap for Machine Learning Engineer">
+                            <div class="fw-semibold text-main mb-1 d-flex align-items-center gap-2">
+                                <i data-lucide="route" style="width: 16px; height: 16px;" class="text-cyan"></i> Learning Roadmap
+                            </div>
+                            <div class="text-muted small">Get step-by-step career milestones</div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="prompt-chip" data-prompt="I know Python, Docker, SQL and PyTorch">
+                            <div class="fw-semibold text-main mb-1 d-flex align-items-center gap-2">
+                                <i data-lucide="sliders" style="width: 16px; height: 16px;" class="text-success"></i> Update Profile
+                            </div>
+                            <div class="text-muted small">Add new skills & interests to profile</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Historical Messages -->
+            {% if history %}
+            {% for msg in history %}
+            <div class="chat-message-row {% if msg.sender == 'user' %}user{% else %}bot{% endif %}">
+                {% if msg.sender != 'user' %}
+                <div class="bot-avatar">
+                    <i data-lucide="bot" style="width: 18px; height: 18px;"></i>
+                </div>
+                {% endif %}
+                <div class="chat-bubble">
+                    <div style="white-space: pre-wrap;">{{ msg.message }}</div>
+                    {% if msg.sender != 'user' %}
+                    <div class="mt-2 text-end d-flex align-items-center justify-content-end gap-2">
+                        <button class="btn btn-sm btn-link text-muted p-0 speak-btn" onclick="speakMessageText(this)" title="Listen to message">
+                            <i data-lucide="volume-2" style="width: 14px; height: 14px;"></i> Listen
+                        </button>
+                        <button class="btn btn-sm btn-link text-muted p-0 me-2 copy-btn" onclick="copyMessageText(this)" title="Copy text">
+                            <i data-lucide="copy" style="width: 14px; height: 14px;"></i> Copy
+                        </button>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+            {% endif %}
+        </div>
+
+        <!-- Sticky Bottom Composer with Voice & Text Input -->
+        <div class="chat-composer">
+            <div class="d-flex align-items-end gap-2">
+                <!-- Microphone Button for Voice Input -->
+                <button id="micBtn" class="btn voice-mic-btn flex-shrink-0" title="Start voice input" aria-label="Start voice input">
+                    <i data-lucide="mic" style="width: 20px; height: 20px;"></i>
+                </button>
+
+                <textarea id="chatInput" class="chat-textarea" rows="1" placeholder="Ask CareerBot anything about your career, jobs, or skills..."></textarea>
+
+                <button id="sendBtn" class="btn btn-primary-custom rounded-circle p-2 d-flex align-items-center justify-content-center flex-shrink-0" style="width: 42px; height: 42px;" title="Send message" aria-label="Send message">
+                    <i data-lucide="send" style="width: 18px; height: 18px;"></i>
+                </button>
+            </div>
+            <div class="d-flex justify-content-between align-items-center mt-2 pt-1 px-1 border-top border-color">
+                <small class="text-muted" style="font-size: 0.75rem;">Press <kbd>Enter</kbd> to send, <kbd>Shift+Enter</kbd> for new line</small>
+                <small class="text-muted d-flex align-items-center gap-1" style="font-size: 0.75rem;">
+                    <i data-lucide="shield-check" style="width: 14px; height: 14px;" class="text-success"></i> Two-Way Speech & Grounded Database Matching
+                </small>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/chat.js') }}?v=2026_stt3"></script>
+{% endblock %}
+
+

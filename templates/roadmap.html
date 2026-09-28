@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+
+{% block title %}Career Roadmap — CareerBot{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Header & Target Role Selector -->
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+        <div>
+            <h3 class="fw-bold mb-1 text-main d-flex align-items-center gap-2">
+                <i data-lucide="map" class="text-primary" style="width: 28px; height: 28px;"></i>
+                Career Learning Roadmap
+            </h3>
+            <p class="text-muted small mb-0">Step-by-step milestones to bridge your skill gap for your target tech roles.</p>
+        </div>
+
+        <form action="{{ url_for('roadmap') }}" method="GET" class="d-flex gap-2 flex-grow-1 flex-md-grow-0" style="max-width: 420px;">
+            <select name="role" class="form-select form-select-sm border-color bg-card text-main" onchange="this.form.submit()">
+                {% set available_roles = [
+                    'Python Developer', 'Java Developer', 'Frontend Developer', 'Backend Developer',
+                    'Full Stack Developer', 'Data Analyst', 'Data Scientist', 'Machine Learning Engineer',
+                    'AI Engineer', 'NLP Engineer', 'Software Engineer', 'DevOps Engineer', 'Cloud Engineer'
+                ] %}
+                <option value="" disabled {% if not roadmap.target_role %}selected{% endif %}>Select Target Role...</option>
+                {% for r in available_roles %}
+                <option value="{{ r }}" {% if roadmap.target_role.lower() == r.lower() %}selected{% endif %}>{{ r }}</option>
+                {% endfor %}
+            </select>
+            <button type="submit" class="btn btn-primary-custom btn-sm text-nowrap d-flex align-items-center gap-1">
+                <i data-lucide="compass" style="width: 14px; height: 14px;"></i> Generate
+            </button>
+        </form>
+    </div>
+
+    <!-- Target Role Banner -->
+    <div class="card card-custom p-4 mb-4 bg-card border-color">
+        <div class="row align-items-center g-3">
+            <div class="col-md-8">
+                <div class="d-flex align-items-center gap-2 mb-1">
+                    <span class="badge bg-primary-light text-primary fw-semibold px-2.5 py-1 rounded-pill small">Target Path</span>
+                    <h4 class="fw-bold mb-0 text-main">{{ roadmap.target_role }}</h4>
+                </div>
+                <p class="text-muted small mb-0">
+                    Calculated from your current profile skills compared against key requirements for this role.
+                </p>
+            </div>
+            <div class="col-md-4 text-md-end">
+                <div class="d-inline-flex flex-column align-items-md-end">
+                    <span class="fs-4 fw-bold text-accent">{{ roadmap.completion_percentage }}% Prepared</span>
+                    <div class="progress progress-custom mt-1" style="width: 180px; height: 8px;">
+                        <div class="progress-bar-custom" data-progress="{{ roadmap.completion_percentage }}"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Timeline Grid -->
+    <div class="row g-4">
+        <div class="col-lg-8">
+            <div class="card card-custom p-4">
+                <h5 class="fw-bold mb-4 text-main d-flex align-items-center gap-2">
+                    <i data-lucide="list-checks" class="text-primary" style="width: 20px; height: 20px;"></i>
+                    Learning Milestones Timeline
+                </h5>
+
+                <div class="timeline">
+                    {% for step in roadmap.steps %}
+                    <div class="timeline-step {% if step.status == 'Completed' %}completed{% elif step.status == 'In Progress' %}current{% endif %}">
+                        <div class="timeline-node">
+                            {% if step.status == 'Completed' %}
+                            <i data-lucide="check" style="width: 16px; height: 16px;"></i>
+                            {% else %}
+                            {{ loop.index }}
+                            {% endif %}
+                        </div>
+
+                        <div class="p-3 bg-subtle rounded-3 border border-color ms-2 mb-3">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <h6 class="fw-bold mb-0 text-main">{{ step.title }}</h6>
+                                <span class="badge {% if step.status == 'Completed' %}bg-success{% elif step.status == 'In Progress' %}bg-primary{% else %}bg-secondary{% endif %} rounded-pill small">
+                                    {{ step.status }}
+                                </span>
+                            </div>
+
+                            <p class="text-muted small mb-2">{{ step.description }}</p>
+
+                            <div class="d-flex flex-wrap gap-1">
+                                {% for skill in step.skills %}
+                                <span class="skill-chip {% if step.status == 'Completed' %}matched{% else %}missing{% endif %}">{{ skill }}</span>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar: Missing Skills Summary & AI Prompt -->
+        <div class="col-lg-4">
+            <div class="card card-custom p-4 mb-4">
+                <h5 class="fw-bold mb-3 text-main d-flex align-items-center gap-2">
+                    <i data-lucide="alert-triangle" class="text-warning" style="width: 18px; height: 18px;"></i>
+                    Skills to Acquire
+                </h5>
+                {% if roadmap.all_missing_skills %}
+                <p class="small text-muted mb-2">Recommended additions for target role:</p>
+                <div class="d-flex flex-wrap gap-1">
+                    {% for skill in roadmap.all_missing_skills %}
+                    <span class="skill-chip missing">{{ skill }}</span>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="text-success small fw-semibold mb-0 d-flex align-items-center gap-1">
+                    <i data-lucide="check-circle-2" style="width: 16px; height: 16px;"></i>
+                    You meet all core requirements for this target role!
+                </p>
+                {% endif %}
+            </div>
+
+            <div class="card card-custom p-4 text-center">
+                <div class="stat-icon bg-primary-light text-primary mx-auto mb-3" style="width: 48px; height: 48px;">
+                    <i data-lucide="bot" style="width: 24px; height: 24px;"></i>
+                </div>
+                <h6 class="fw-bold text-main mb-2">Need Learning Resources?</h6>
+                <p class="text-muted small mb-3">Ask CareerBot in AI Chat to suggest free tutorials, projects, and certifications for missing skills.</p>
+                <a href="{{ url_for('chat') }}" class="btn btn-outline-custom btn-sm w-100 d-flex align-items-center justify-content-center gap-2">
+                    <i data-lucide="message-square" style="width: 14px; height: 14px;"></i> Ask CareerBot
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
