@@ -741,6 +741,99 @@ def api_jobs_resume_matches():
         db.close()
 
 
+@app.route("/api/jobs/live", methods=["GET"])
+@app.route("/api/jobs/adzuna", methods=["GET"])
+def api_live_jobs():
+    """
+    Backend REST API route searching Adzuna live jobs.
+    Uses resume-extracted skills, target role, user preferences, location, and work mode.
+    Combines live Adzuna results with CareerBot database jobs and calculates personalized matches.
+    Keeps credentials strictly server-side.
+    """
+    role_query = (request.args.get("role") or request.args.get("q") or "").strip()
+    loc_query = request.args.get("location", "").strip()
+    work_mode_query = request.args.get("work_mode", "").strip()
+    exp_query = request.args.get("experience", "").strip()
+    country_query = request.args.get("country", "").strip()
+    combine_param = request.args.get("combine", "true").strip().lower()
+    should_combine = combine_param not in ("false", "0", "no")
+
+    filters = {}
+    if role_query: filters["role"] = role_query
+    if loc_query: filters["location"] = loc_query
+    if work_mode_query: filters["work_mode"] = work_mode_query
+    if exp_query: filters["experience"] = exp_query
+
+    db = SessionLocal()
+    try:
+        profile_dict = {}
+        has_resume = False
+
+        if g.current_user:
+            profile = career_service.get_or_create_user_profile(db, g.current_user.id)
+            active_resume = db.query(Resume).filter_by(user_id=g.current_user.id).order_by(Resume.uploaded_at.desc()).first()
+            has_resume = active_resume is not None and bool(active_resume.extracted_data and active_resume.extracted_data.get("skills"))
+            profile_dict = profile.to_dict()
+            profile_dict["has_resume"] = has_resume
+            if has_resume:
+                profile_dict["skills"] = active_resume.extracted_data.get("skills", [])
+            else:
+                profile_dict["skills"] = []
+
+        # If user did not specify role, leverage resume skills or target role
+        effective_query = role_query
+        if not effective_query:
+            target_roles = profile_dict.get("target_roles", [])
+            resume_skills = profile_dict.get("skills", [])
+            if target_roles and target_roles[0]:
+                effective_query = target_roles[0]
+            elif resume_skills:
+                effective_query = " ".join(resume_skills[:2])
+            else:
+                effective_query = "Software Developer"
+
+        # Determine source mode
+        source = "all" if should_combine else "live"
+        jobs_list = job_provider.get_all_jobs(db, source=source, filters=filters, profile_dict=profile_dict)
+
+        # Run personalized matching engine
+        match_data = ranker.rank_recommendations(profile_dict, jobs_list, filters)
+        results = match_data.get("results", [])
+
+        # Count sources
+        live_count = sum(1 for j in results if j.get("is_live"))
+        db_count = sum(1 for j in results if not j.get("is_live"))
+
+        return jsonify({
+            "status": "success",
+            "search_query": effective_query,
+            "filters": {
+                "role": role_query,
+                "location": loc_query,
+                "work_mode": work_mode_query,
+                "experience": exp_query,
+                "country": country_query or "in"
+            },
+            "credentials_configured": bool(Config.ADZUNA_APP_ID and Config.ADZUNA_APP_KEY),
+            "has_resume": has_resume,
+            "source_breakdown": {
+                "live_jobs": live_count,
+                "careerbot_database": db_count
+            },
+            "total_jobs": len(results),
+            "jobs": results
+        }), 200
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "message": f"Failed to retrieve live jobs: {str(e)}",
+            "credentials_configured": bool(Config.ADZUNA_APP_ID and Config.ADZUNA_APP_KEY),
+            "jobs": []
+        }), 500
+    finally:
+        db.close()
+
+
 @app.route("/api/jobs/save/<job_id>", methods=["POST", "DELETE"])
 @login_required
 def api_job_save_toggle(job_id):

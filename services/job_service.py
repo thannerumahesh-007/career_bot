@@ -45,7 +45,7 @@ class LocalDatasetProvider(JobProvider):
             d = j.to_dict()
             d["is_live"] = False
             if not d.get("source"):
-                d["source"] = "LinkedIn Verified"
+                d["source"] = "CareerBot Database"
             result.append(d)
         return result
 
@@ -67,7 +67,7 @@ class LocalDatasetProvider(JobProvider):
             d = job.to_dict()
             d["is_live"] = False
             if not d.get("source"):
-                d["source"] = "LinkedIn Verified"
+                d["source"] = "CareerBot Database"
             return d
         return None
 
@@ -93,6 +93,173 @@ class LiveJobSearchService:
         clean = re.sub(r'\s+', ' ', clean)
         return clean.strip()
 
+    def _fetch_adzuna(self, query: str = "", location: str = "", country: str = "in", results_per_page: int = 25) -> List[dict]:
+        """
+        Retrieves live job listings from Adzuna Job Search API.
+        Adzuna credentials remain strictly server-side (Config.ADZUNA_APP_ID & Config.ADZUNA_APP_KEY).
+        Gracefully handles API errors, empty responses, rate limits, and network timeouts.
+        """
+        app_id = getattr(Config, "ADZUNA_APP_ID", "").strip()
+        app_key = getattr(Config, "ADZUNA_APP_KEY", "").strip()
+
+        if not app_id or not app_key:
+            return []
+
+        # Auto-detect country code from location query if relevant
+        loc_lower = (location or "").lower()
+        if "us" in loc_lower or "united states" in loc_lower or "america" in loc_lower:
+            country_code = "us"
+        elif "uk" in loc_lower or "london" in loc_lower or "britain" in loc_lower or "gb" in loc_lower:
+            country_code = "gb"
+        elif "canada" in loc_lower:
+            country_code = "ca"
+        elif "india" in loc_lower:
+            country_code = "in"
+        else:
+            country_code = country or "in"
+
+        clean_query = (query or "").strip()
+        if not clean_query:
+            clean_query = "Software Developer"
+
+        params = {
+            "app_id": app_id,
+            "app_key": app_key,
+            "what": clean_query,
+            "results_per_page": min(max(results_per_page, 5), 50),
+            "content-type": "application/json"
+        }
+        if location and location.lower() != "remote":
+            params["where"] = location
+
+        encoded_params = urllib.parse.urlencode(params)
+        primary_url = f"https://api.adzuna.com/v1/api/jobs/{country_code}/search/1?{encoded_params}"
+
+        def _request_json(target_url: str):
+            req = urllib.request.Request(
+                target_url,
+                headers={"User-Agent": "CareerBot-AdzunaClient/1.0", "Accept": "application/json"}
+            )
+            with urllib.request.urlopen(req, timeout=8) as response:
+                if response.status == 200:
+                    return json.loads(response.read().decode("utf-8"))
+            return None
+
+        payload = None
+        try:
+            payload = _request_json(primary_url)
+        except urllib.error.HTTPError as http_err:
+            # If 503 or bad status on country code, attempt fallback to US endpoint
+            if country_code != "us" and http_err.code in (400, 500, 502, 503):
+                try:
+                    fallback_url = f"https://api.adzuna.com/v1/api/jobs/us/search/1?{encoded_params}"
+                    payload = _request_json(fallback_url)
+                    country_code = "us"
+                except Exception:
+                    pass
+        except Exception:
+            pass
+
+        if not payload or not isinstance(payload, dict):
+            return []
+
+        raw_results = payload.get("results", [])
+        if not raw_results and country_code != "us":
+            # If 0 results, retry without location constraint on US directory
+            try:
+                relaxed_params = dict(params)
+                relaxed_params.pop("where", None)
+                relaxed_url = f"https://api.adzuna.com/v1/api/jobs/us/search/1?{urllib.parse.urlencode(relaxed_params)}"
+                fallback_payload = _request_json(relaxed_url)
+                if fallback_payload:
+                    raw_results = fallback_payload.get("results", [])
+                    country_code = "us"
+            except Exception:
+                pass
+
+        adzuna_jobs = []
+        for item in raw_results:
+            adzuna_id = item.get("id")
+            title = self._clean_html(item.get("title", "Software Role"))
+            company_info = item.get("company") or {}
+            company = company_info.get("display_name", "Enterprise Tech").strip()
+            loc_info = item.get("location") or {}
+            loc_display = loc_info.get("display_name", location or "Remote").strip()
+            redirect_url = item.get("redirect_url", "").strip()
+            raw_desc = self._clean_html(item.get("description", ""))
+
+            title_lower = title.lower()
+            desc_lower = raw_desc.lower()
+            loc_lower_str = loc_display.lower()
+            if "remote" in title_lower or "remote" in loc_lower_str or "remote" in desc_lower:
+                work_mode = "Remote"
+            elif "hybrid" in title_lower or "hybrid" in loc_lower_str or "hybrid" in desc_lower:
+                work_mode = "Hybrid"
+            else:
+                work_mode = "On-site"
+
+            if "intern" in title_lower or "fresher" in title_lower or "trainee" in title_lower:
+                exp = "Fresher"
+            elif "junior" in title_lower or "entry" in title_lower or "graduate" in title_lower:
+                exp = "Junior Developer"
+            elif "lead" in title_lower or "principal" in title_lower or "architect" in title_lower:
+                exp = "5+ years (Lead)"
+            elif "senior" in title_lower or "sr" in title_lower:
+                exp = "3-5+ years"
+            else:
+                exp = "1-3 years"
+
+            sal_min = item.get("salary_min")
+            sal_max = item.get("salary_max")
+            if sal_min or sal_max:
+                curr = "₹" if country_code == "in" else ("£" if country_code == "gb" else "$")
+                if sal_min and sal_max and sal_min != sal_max:
+                    salary_str = f"{curr}{int(sal_min):,} - {curr}{int(sal_max):,}"
+                elif sal_min:
+                    salary_str = f"{curr}{int(sal_min):,}+"
+                else:
+                    salary_str = f"Up to {curr}{int(sal_max):,}"
+            else:
+                salary_str = "Competitive Market Standard"
+
+            extracted_skills = self.skill_extractor.extract_skills(f"{title} {raw_desc[:1200]}")
+            if not extracted_skills:
+                extracted_skills = ["Software Engineering", "Problem Solving", "Collaboration"]
+
+            job_id_str = f"adzuna_{adzuna_id}" if adzuna_id else f"adzuna_{abs(hash(title + company)) % 10000000}"
+
+            job_obj = {
+                "job_id": job_id_str,
+                "title": title,
+                "company": company,
+                "location": loc_display,
+                "work_mode": work_mode,
+                "job_type": "Full-time",
+                "experience": exp,
+                "education": "Bachelor's Degree in Computer Science, IT, or related engineering discipline",
+                "skills": ", ".join(extracted_skills),
+                "required_skills": extracted_skills,
+                "preferred_skills": "Strong analytical problem solving and collaborative engineering practices",
+                "responsibilities": raw_desc[:300] + ("..." if len(raw_desc) > 300 else ""),
+                "description": raw_desc[:1500] if len(raw_desc) > 1500 else raw_desc,
+                "keywords": f"{title} {loc_display} {company}".lower(),
+                "salary": salary_str,
+                "source": "Live Job (Adzuna)",
+                "is_live": True,
+                "url": redirect_url,
+                "apply_url": redirect_url
+            }
+            adzuna_jobs.append(job_obj)
+
+        return adzuna_jobs
+
+    def search_adzuna(self, query: str = "", location: str = "", country: str = "in", results_per_page: int = 25) -> List[dict]:
+        """Direct Adzuna search with result caching by job ID."""
+        jobs = self._fetch_adzuna(query=query, location=location, country=country, results_per_page=results_per_page)
+        for j in jobs:
+            self._cached_jobs_by_id[str(j["job_id"])] = j
+        return jobs
+
     def fetch_live_jobs(self, filters: dict = None, profile_dict: dict = None) -> List[dict]:
         """
         Fetches live jobs using:
@@ -102,14 +269,49 @@ class LiveJobSearchService:
         - location preference
         - work mode & experience
         """
+        filters = filters or {}
+        profile_dict = profile_dict or {}
+
+        role_filter = filters.get("role", "").strip()
+        loc_filter = filters.get("location", "").strip()
+        target_roles = profile_dict.get("target_roles", [])
+        resume_skills = profile_dict.get("skills", [])
+
+        # Priority 1: User search query
+        if role_filter:
+            search_query = role_filter
+        # Priority 2: User profile target role
+        elif target_roles and target_roles[0]:
+            search_query = target_roles[0]
+        # Priority 3: Resume-extracted skills
+        elif resume_skills:
+            search_query = " ".join(resume_skills[:2])
+        # Priority 4: Default tech role
+        else:
+            search_query = "Software Developer"
+
+        cache_key = f"live_feed_{search_query.lower()}_{loc_filter.lower()}"
         now = time.time()
-        cache_key = "live_jobs_feed"
         
         cached_entry = self._cache.get(cache_key)
         if cached_entry and (now - cached_entry.get("timestamp", 0)) < self.cache_ttl:
             raw_live_jobs = cached_entry.get("jobs", [])
         else:
-            raw_live_jobs = self._query_external_apis()
+            # Query Adzuna live search API
+            adzuna_jobs = self._fetch_adzuna(query=search_query, location=loc_filter)
+            # Query public tech job boards (Arbeitnow & Jobicy)
+            public_jobs = self._query_external_apis()
+
+            # Combine live jobs: prioritize Adzuna then public APIs
+            combined_live = []
+            seen_keys = set()
+            for job in adzuna_jobs + public_jobs:
+                key = (job.get("title", "").lower().strip(), job.get("company", "").lower().strip())
+                if key not in seen_keys:
+                    seen_keys.add(key)
+                    combined_live.append(job)
+
+            raw_live_jobs = combined_live
             self._cache[cache_key] = {
                 "timestamp": now,
                 "jobs": raw_live_jobs
@@ -118,7 +320,7 @@ class LiveJobSearchService:
                 self._cached_jobs_by_id[str(j["job_id"])] = j
 
         # Apply context-based search and filter
-        return self._filter_and_rank_live_jobs(raw_live_jobs, filters or {}, profile_dict or {})
+        return self._filter_and_rank_live_jobs(raw_live_jobs, filters, profile_dict)
 
     def _query_external_apis(self) -> List[dict]:
         """Queries legitimate job APIs and normalizes results into CareerBot job schemas."""

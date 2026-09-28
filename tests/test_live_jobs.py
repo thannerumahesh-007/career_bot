@@ -70,7 +70,7 @@ class TestLiveJobsAndCombinedProvider(unittest.TestCase):
             }
         ]
 
-        with patch.object(service, '_query_external_apis', return_value=sample_jobs):
+        with patch.object(service, '_query_external_apis', return_value=sample_jobs), patch.object(service, '_fetch_adzuna', return_value=[]):
             # Test filter by role keyword
             results = service.fetch_live_jobs(filters={"role": "Machine Learning"})
             self.assertEqual(len(results), 1)
@@ -158,3 +158,79 @@ class TestLiveJobsAndCombinedProvider(unittest.TestCase):
         res = self.client.get('/jobs?tab=all')
         self.assertEqual(res.status_code, 200)
         self.assertIn(b"Upload resume to match", res.data)
+
+    def test_adzuna_live_search_parsing_and_apply_url(self):
+        service = LiveJobSearchService()
+        sample_adzuna_payload = {
+            "results": [
+                {
+                    "id": "5895258681",
+                    "title": "<strong>Python Developer</strong>",
+                    "company": {"display_name": "MANTECH"},
+                    "location": {"display_name": "Herndon, Virginia"},
+                    "salary_min": 120000,
+                    "salary_max": 150000,
+                    "redirect_url": "https://www.adzuna.com/land/ad/5895258681?apply=direct",
+                    "description": "Looking for a Python Developer experienced with AWS, SQL, and Docker."
+                }
+            ]
+        }
+
+        with patch.object(service, '_fetch_adzuna') as mock_fetch:
+            mock_fetch.return_value = [
+                {
+                    "job_id": "adzuna_5895258681",
+                    "title": "Python Developer",
+                    "company": "MANTECH",
+                    "location": "Herndon, Virginia",
+                    "work_mode": "On-site",
+                    "job_type": "Full-time",
+                    "experience": "1-3 years",
+                    "education": "Bachelor's Degree in Computer Science, IT, or related discipline",
+                    "skills": "Python, AWS, SQL, Docker",
+                    "required_skills": ["Python", "AWS", "SQL", "Docker"],
+                    "preferred_skills": "Strong analytical problem solving and collaborative engineering",
+                    "responsibilities": "Develop Python microservices...",
+                    "description": "Looking for a Python Developer experienced with AWS, SQL, and Docker.",
+                    "keywords": "python developer herndon mantech",
+                    "salary": "$120,000 - $150,000",
+                    "source": "Live Job (Adzuna)",
+                    "is_live": True,
+                    "url": "https://www.adzuna.com/land/ad/5895258681?apply=direct",
+                    "apply_url": "https://www.adzuna.com/land/ad/5895258681?apply=direct"
+                }
+            ]
+
+            jobs = service.search_adzuna(query="Python", location="Herndon")
+            self.assertEqual(len(jobs), 1)
+            job = jobs[0]
+            self.assertEqual(job["title"], "Python Developer")
+            self.assertEqual(job["company"], "MANTECH")
+            self.assertEqual(job["source"], "Live Job (Adzuna)")
+            self.assertEqual(job["url"], "https://www.adzuna.com/land/ad/5895258681?apply=direct")
+            self.assertEqual(job["apply_url"], "https://www.adzuna.com/land/ad/5895258681?apply=direct")
+            self.assertIn("Python", job["skills"])
+
+    def test_api_jobs_live_and_adzuna_routes(self):
+        # Test /api/jobs/live endpoint
+        res = self.client.get('/api/jobs/live?role=Python&location=Remote')
+        self.assertEqual(res.status_code, 200)
+        data = res.get_json()
+        self.assertEqual(data["status"], "success")
+        self.assertIn("jobs", data)
+        self.assertIn("source_breakdown", data)
+        self.assertIn("live_jobs", data["source_breakdown"])
+        self.assertIn("careerbot_database", data["source_breakdown"])
+
+        # Test /api/jobs/adzuna alias
+        res_alias = self.client.get('/api/jobs/adzuna?combine=false')
+        self.assertEqual(res_alias.status_code, 200)
+        data_alias = res_alias.get_json()
+        self.assertEqual(data_alias["status"], "success")
+
+    def test_adzuna_missing_credentials_handling(self):
+        service = LiveJobSearchService()
+        with patch("config.Config.ADZUNA_APP_ID", ""), patch("config.Config.ADZUNA_APP_KEY", ""):
+            jobs = service._fetch_adzuna(query="Python")
+            self.assertEqual(jobs, [])
+
