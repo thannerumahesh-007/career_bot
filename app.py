@@ -19,7 +19,7 @@ from database.database import init_db, SessionLocal
 from database.models import User, UserProfile, Resume, JobModel, ChatHistory, UserJobInteraction
 from services.career_service import CareerService
 from services.resume_service import ResumeService
-from services.job_service import LocalDatasetProvider
+from services.job_service import CombinedJobProvider, job_provider
 from recommender.ranking import JobRanker
 from recommender.skill_gap import SkillGapAnalyzer
 from nlp.skill_extractor import SkillExtractor
@@ -39,7 +39,7 @@ init_db()
 
 career_service = CareerService()
 resume_service = ResumeService()
-job_provider = LocalDatasetProvider()
+job_provider = CombinedJobProvider()
 ranker = JobRanker()
 gap_analyzer = SkillGapAnalyzer()
 skill_extractor = SkillExtractor()
@@ -364,16 +364,26 @@ def jobs():
     role_query = request.args.get("role", "").strip()
     loc_query = request.args.get("location", "").strip()
     exp_query = request.args.get("experience", "").strip()
+    work_mode_query = request.args.get("work_mode", "").strip()
+    source_query = request.args.get("source", "").strip().lower()
+
+    # Determine source filtering (all, live, database)
+    if tab == "live" or source_query == "live":
+        active_source = "live"
+    elif tab == "database" or source_query == "database":
+        active_source = "database"
+    else:
+        active_source = "all"
+
+    filters = {}
+    if role_query: filters["role"] = role_query
+    if loc_query: filters["location"] = loc_query
+    if exp_query: filters["experience"] = exp_query
+    if work_mode_query: filters["work_mode"] = work_mode_query
 
     db = SessionLocal()
     try:
         profile = career_service.get_or_create_user_profile(db, g.current_user.id)
-        all_jobs = job_provider.get_all_jobs(db)
-
-        # Build saved job_ids set for user
-        saved_records = db.query(UserJobInteraction).filter_by(user_id=g.current_user.id, is_saved="true").all()
-        saved_job_ids = {r.job_id for r in saved_records}
-
         active_resume = db.query(Resume).filter_by(user_id=g.current_user.id).order_by(Resume.uploaded_at.desc()).first()
         has_resume = active_resume is not None and bool(active_resume.extracted_data and active_resume.extracted_data.get("skills"))
 
@@ -384,10 +394,11 @@ def jobs():
         else:
             profile_dict["skills"] = []
 
-        filters = {}
-        if role_query: filters["role"] = role_query
-        if loc_query: filters["location"] = loc_query
-        if exp_query: filters["experience"] = exp_query
+        all_jobs = job_provider.get_all_jobs(db, source=active_source, filters=filters, profile_dict=profile_dict)
+
+        # Build saved job_ids set for user
+        saved_records = db.query(UserJobInteraction).filter_by(user_id=g.current_user.id, is_saved="true").all()
+        saved_job_ids = {str(r.job_id) for r in saved_records}
 
         match_data = ranker.rank_recommendations(profile_dict, all_jobs, filters)
         results = match_data.get("results", [])
@@ -396,16 +407,21 @@ def jobs():
         if tab == "recommended":
             results = [j for j in results if j.get("has_match") and j.get("overall_score", 0) >= Config.MODERATE_MATCH_THRESHOLD]
         elif tab == "saved":
-            results = [j for j in results if j["job_id"] in saved_job_ids]
+            results = [j for j in results if str(j.get("job_id")) in saved_job_ids]
         elif tab == "resume-matches":
             results = [j for j in results if j.get("has_match") and j.get("overall_score", 0) >= 0.40]
+        elif tab == "live":
+            results = [j for j in results if j.get("is_live")]
+        elif tab == "database":
+            results = [j for j in results if not j.get("is_live")]
 
         # Attach saved indicator
         for j in results:
-            j["is_saved"] = j["job_id"] in saved_job_ids
+            j["is_saved"] = str(j.get("job_id")) in saved_job_ids
 
         return render_template("jobs.html",
                                active_tab=tab,
+                               active_source=active_source,
                                results=results,
                                has_resume=has_resume,
                                message=match_data.get("message", ""),
@@ -427,8 +443,6 @@ def jobs_resume_matches():
         active_resume = db.query(Resume).filter_by(user_id=g.current_user.id).order_by(Resume.uploaded_at.desc()).first()
         has_resume = active_resume is not None and bool(active_resume.extracted_data and active_resume.extracted_data.get("skills"))
 
-        all_jobs = job_provider.get_all_jobs(db)
-
         profile_dict = profile.to_dict()
         profile_dict["has_resume"] = has_resume
         if has_resume:
@@ -436,14 +450,15 @@ def jobs_resume_matches():
         else:
             profile_dict["skills"] = []
 
+        all_jobs = job_provider.get_all_jobs(db, source="all", profile_dict=profile_dict)
         match_data = ranker.rank_recommendations(profile_dict, all_jobs)
-        results = match_data.get("results", [])
+        results = [j for j in match_data.get("results", []) if j.get("has_match")]
 
         # Saved status
         saved_records = db.query(UserJobInteraction).filter_by(user_id=g.current_user.id, is_saved="true").all()
-        saved_job_ids = {r.job_id for r in saved_records}
+        saved_job_ids = {str(r.job_id) for r in saved_records}
         for j in results:
-            j["is_saved"] = j["job_id"] in saved_job_ids
+            j["is_saved"] = str(j.get("job_id")) in saved_job_ids
 
         return render_template("jobs_resume_matches.html",
                                results=results,
@@ -484,7 +499,11 @@ def job_details(job_id):
 
         match_result = ranker.matcher.match_job(profile_dict, job)
 
-        saved = db.query(UserJobInteraction).filter_by(user_id=g.current_user.id, job_id=job_id, is_saved="true").first()
+        try:
+            numeric_id = int(job_id)
+        except (ValueError, TypeError):
+            numeric_id = abs(hash(str(job_id))) % 1000000000
+        saved = db.query(UserJobInteraction).filter_by(user_id=g.current_user.id, job_id=numeric_id, is_saved="true").first()
         job["is_saved"] = saved is not None
 
         return render_template("job_details.html",
@@ -722,17 +741,22 @@ def api_jobs_resume_matches():
         db.close()
 
 
-@app.route("/api/jobs/save/<int:job_id>", methods=["POST", "DELETE"])
+@app.route("/api/jobs/save/<job_id>", methods=["POST", "DELETE"])
 @login_required
 def api_job_save_toggle(job_id):
     """Saves or unsaves a job for current authenticated user."""
+    try:
+        numeric_id = int(job_id)
+    except (ValueError, TypeError):
+        numeric_id = abs(hash(str(job_id))) % 1000000000
+
     db = SessionLocal()
     try:
-        record = db.query(UserJobInteraction).filter_by(user_id=g.current_user.id, job_id=job_id).first()
+        record = db.query(UserJobInteraction).filter_by(user_id=g.current_user.id, job_id=numeric_id).first()
 
         if request.method == "POST":
             if not record:
-                record = UserJobInteraction(user_id=g.current_user.id, job_id=job_id, is_saved="true")
+                record = UserJobInteraction(user_id=g.current_user.id, job_id=numeric_id, is_saved="true")
                 db.add(record)
             else:
                 record.is_saved = "true"

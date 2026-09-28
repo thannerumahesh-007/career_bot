@@ -44,6 +44,12 @@ class Config:
     NEWS_API_KEY = os.environ.get("NEWS_API_KEY", "").strip()
     NEWS_CACHE_TTL = 300  # 5 minutes in-memory cache
 
+    # Live Job Search API Configuration
+    JOB_SEARCH_API_KEY = os.environ.get("JOB_SEARCH_API_KEY", "").strip()
+    ADZUNA_APP_ID = os.environ.get("ADZUNA_APP_ID", "").strip()
+    ADZUNA_APP_KEY = os.environ.get("ADZUNA_APP_KEY", "").strip()
+    LIVE_JOB_CACHE_TTL = 600  # 10 minutes cache
+
     # Job Dataset Path
     JOBS_DATASET_PATH = BASE_DIR / "data" / "jobs.csv"
 

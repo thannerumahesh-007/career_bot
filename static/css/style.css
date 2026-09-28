@@ -1,113 +1,157 @@
-/* ======================================================
-   CareerBot Design System — Professional Blue & Cyan Theme
-   Modern Glassmorphism, High-Contrast Palette, Zero Purple
-   ====================================================== */
+/* ==========================================================================
+   CareerBot Design System — Minimalist High-Contrast Palette
+   Carbon Black, Azure Blue, Slate Grey, Coral, White, Soft Slate
+   Zero Purple. Clean, Professional, B.Tech AI/ML Standard.
+   ========================================================================== */
 
 :root {
-    /* Rich Dark Mode Palette (Default) */
-    --bg-main: #0b1329;
-    --bg-surface: #111c38;
-    --bg-card: #162447;
-    --bg-subtle: #1f2e54;
-    --bg-glass: rgba(17, 28, 56, 0.9);
-    
-    --primary: #2563eb;
-    --primary-hover: #1d4ed8;
-    --primary-light: rgba(37, 99, 235, 0.18);
-    --primary-gradient: linear-gradient(135deg, #2563eb 0%, #06b6d4 100%);
-    
-    --accent: #06b6d4;
-    --cyan: #06b6d4;
-    --cyan-light: rgba(6, 182, 212, 0.18);
-    --slate: #64748b;
-    
-    --text-main: #f8fafc;
-    --text-muted: #cbd5e1;
-    --text-subtle: #94a3b8;
-    --border-color: rgba(255, 255, 255, 0.14);
-    --border-glow: rgba(6, 182, 212, 0.35);
-    
-    /* Functional Glow Colors */
-    --success: #10b981;
-    --success-bg: rgba(16, 185, 129, 0.18);
-    --warning: #f59e0b;
-    --warning-bg: rgba(245, 158, 11, 0.18);
-    --danger: #f43f5e;
-    --danger-bg: rgba(244, 63, 94, 0.18);
+    /* Brand Tokens */
+    --carbon-black: #18181B;
+    --azure-blue: #3B82F6;
+    --azure-blue-hover: #2563EB;
+    --azure-blue-light: #EFF6FF;
+    --azure-blue-glow: rgba(59, 130, 246, 0.25);
+    --slate-grey: #64748B;
+    --slate-grey-light: #94A3B8;
+    --slate-grey-border: #E4E4E7;
+    --coral: #F43F5E;
+    --coral-bg: rgba(244, 63, 94, 0.12);
+    --white: #FFFFFF;
+    --soft-slate: #F4F4F5;
 
-    /* Shadows & Glass Effects */
-    --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.4);
-    --shadow-md: 0 8px 24px -4px rgba(0, 0, 0, 0.5), 0 0 15px rgba(6, 182, 212, 0.12);
-    --shadow-lg: 0 16px 36px -6px rgba(0, 0, 0, 0.6), 0 0 25px rgba(6, 182, 212, 0.22);
+    /* Light Theme (Default clean surfaces) */
+    --bg-main: #F4F4F5;          /* Soft Slate */
+    --bg-surface: #FFFFFF;       /* White */
+    --bg-card: #FFFFFF;          /* White */
+    --bg-subtle: #F4F4F5;        /* Soft Slate */
+    --bg-nav: #18181B;           /* Carbon Black navigation structure */
+    --nav-text: #F4F4F5;
+    --nav-muted: #94A3B8;
+    
+    --primary: #3B82F6;          /* Azure Blue */
+    --primary-hover: #2563EB;
+    --primary-light: #EFF6FF;
+    --primary-gradient: linear-gradient(135deg, #3B82F6 0%, #2563EB 100%);
+    
+    --accent: #3B82F6;
+    --slate: #64748B;            /* Slate Grey */
+    
+    --text-main: #18181B;        /* Carbon Black */
+    --text-muted: #64748B;       /* Slate Grey */
+    --text-subtle: #94A3B8;
+    --border-color: #E4E4E7;     /* Slate Grey border */
+    --border-glow: rgba(59, 130, 246, 0.35);
+    
+    /* Functional Alert Colors */
+    --danger: #F43F5E;           /* Coral: warnings, missing skills, low match */
+    --danger-bg: rgba(244, 63, 94, 0.12);
+    --warning: #F59E0B;
+    --warning-bg: rgba(245, 158, 11, 0.12);
+    --success: #10B981;
+    --success-bg: rgba(16, 185, 129, 0.12);
+
+    /* Shadows & Border Radii */
+    --shadow-sm: 0 1px 3px rgba(24, 24, 27, 0.05);
+    --shadow-md: 0 4px 14px rgba(24, 24, 27, 0.07);
+    --shadow-lg: 0 10px 28px rgba(24, 24, 27, 0.09);
     
     --radius-sm: 8px;
-    --radius-md: 14px;
-    --radius-lg: 20px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
     --radius-pill: 9999px;
-    --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-[data-theme="light"] {
-    --bg-main: #f8fafc;
-    --bg-surface: #ffffff;
-    --bg-card: #ffffff;
-    --bg-subtle: #f1f5f9;
-    --bg-glass: rgba(255, 255, 255, 0.92);
+/* Dark Theme Overrides */
+[data-theme="dark"] {
+    --bg-main: #18181B;          /* Carbon Black page background */
+    --bg-surface: #27272A;       /* High-contrast Carbon Card/Surface */
+    --bg-card: #27272A;          /* High-contrast Carbon Card */
+    --bg-subtle: #1F1F23;        /* Dark Subtle Inset */
+    --bg-nav: #18181B;           /* Carbon Black */
+    --nav-text: #F4F4F5;
+    --nav-muted: #94A3B8;
     
-    --primary: #2563eb;
-    --primary-hover: #1d4ed8;
-    --primary-light: #eff6ff;
-    --primary-gradient: linear-gradient(135deg, #1d4ed8 0%, #0891b2 100%);
+    --primary: #3B82F6;          /* Azure Blue */
+    --primary-hover: #60A5FA;
+    --primary-light: rgba(59, 130, 246, 0.18);
+    --primary-gradient: linear-gradient(135deg, #3B82F6 0%, #1D4ED8 100%);
     
-    --accent: #0891b2;
-    --cyan: #0284c7;
-    --cyan-light: #e0f2fe;
-    --slate: #475569;
+    --accent: #3B82F6;
+    --slate: #94A3B8;            /* Lighter Slate for dark readability */
     
-    --text-main: #0f172a;
-    --text-muted: #334155;
-    --text-subtle: #64748b;
-    --border-color: #cbd5e1;
-    --border-glow: rgba(37, 99, 235, 0.25);
+    --text-main: #F4F4F5;        /* Soft Slate text */
+    --text-muted: #A1A1AA;       /* Slate Grey readable */
+    --text-subtle: #71717A;
+    --border-color: #3F3F46;     /* Slate dark border */
+    --border-glow: rgba(59, 130, 246, 0.4);
     
-    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05);
-    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.06);
-    --shadow-lg: 0 12px 24px rgba(0, 0, 0, 0.08);
+    --danger: #F43F5E;           /* Coral */
+    --danger-bg: rgba(244, 63, 94, 0.22);
+    --warning: #F59E0B;
+    --warning-bg: rgba(245, 158, 11, 0.2);
+    --success: #10B981;
+    --success-bg: rgba(16, 185, 129, 0.2);
+
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 4px 14px rgba(0, 0, 0, 0.45);
+    --shadow-lg: 0 10px 28px rgba(0, 0, 0, 0.6);
 }
 
-/* Global Reset & Base Typography */
+/* Base Document Typography & Color */
 body {
     font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     background-color: var(--bg-main);
-    background-image: radial-gradient(circle at 50% -20%, rgba(6, 182, 212, 0.12), transparent 70%);
     color: var(--text-main);
-    transition: background-color 0.3s ease, color 0.3s ease;
+    transition: background-color 0.25s ease, color 0.25s ease;
     min-height: 100vh;
 }
 
-/* Glassmorphism & Header Navigation */
+h1, h2, h3, h4, h5, h6, .text-main {
+    color: var(--text-main) !important;
+}
+
+p, .text-muted {
+    color: var(--text-muted) !important;
+}
+
+a {
+    color: var(--primary);
+    text-decoration: none;
+    transition: var(--transition);
+}
+
+a:hover {
+    color: var(--primary-hover);
+}
+
+/* ==========================================================================
+   Navigation Bar — Carbon Black Structural Anchor
+   ========================================================================== */
 .navbar-custom {
-    background: var(--bg-glass);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    border-bottom: 1px solid var(--border-color);
+    background-color: var(--bg-nav) !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
     box-shadow: var(--shadow-sm);
 }
 
 .navbar-brand-icon {
-    width: 40px;
-    height: 40px;
+    width: 38px;
+    height: 38px;
     border-radius: var(--radius-md);
-    background: var(--primary-gradient);
-    color: #ffffff;
+    background: var(--azure-blue);
+    color: #FFFFFF;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 0 15px rgba(6, 182, 212, 0.4);
+    box-shadow: 0 0 12px var(--azure-blue-glow);
 }
 
-.nav-link {
-    color: var(--text-muted);
+.navbar-custom .text-main {
+    color: var(--nav-text) !important;
+}
+
+.navbar-custom .nav-link {
+    color: var(--nav-muted) !important;
     font-weight: 500;
     padding: 0.5rem 0.9rem !important;
     border-radius: var(--radius-sm);
@@ -117,58 +161,19 @@ body {
     gap: 0.4rem;
 }
 
-.nav-link:hover, .nav-link.active {
-    color: var(--text-main) !important;
-    background-color: var(--primary-light);
-    border: 1px solid var(--border-glow);
+.navbar-custom .nav-link:hover {
+    color: #FFFFFF !important;
+    background-color: rgba(255, 255, 255, 0.08);
 }
 
-/* Form Controls & Comprehensive Dark Mode Contrast Fixes */
-.form-control, .form-select, .input-group-text {
-    background-color: var(--bg-subtle) !important;
-    color: var(--text-main) !important;
-    border: 1px solid var(--border-color) !important;
-    border-radius: var(--radius-sm);
-    transition: var(--transition);
+.navbar-custom .nav-link.active {
+    color: #FFFFFF !important;
+    background-color: var(--azure-blue);
 }
 
-.form-control:focus, .form-select:focus {
-    background-color: var(--bg-card) !important;
-    color: var(--text-main) !important;
-    border-color: var(--primary) !important;
-    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.25) !important;
-}
-
-.form-control::placeholder {
-    color: var(--text-muted) !important;
-    opacity: 0.85;
-}
-
-/* Fix Dark Mode Select Option Contrast */
-select.form-select option {
-    background-color: var(--bg-surface) !important;
-    color: var(--text-main) !important;
-}
-
-/* Fix Dropdown & Modal Contrast in Dark Mode */
-.dropdown-menu {
-    background-color: var(--bg-surface) !important;
-    border: 1px solid var(--border-glow) !important;
-    box-shadow: var(--shadow-lg);
-    border-radius: var(--radius-md);
-}
-
-.dropdown-item {
-    color: var(--text-main) !important;
-    transition: var(--transition);
-}
-
-.dropdown-item:hover {
-    background-color: var(--primary-light) !important;
-    color: var(--primary) !important;
-}
-
-/* Cards & Rich Surfaces */
+/* ==========================================================================
+   Cards & Surfaces
+   ========================================================================== */
 .card-custom {
     background-color: var(--bg-card);
     border: 1px solid var(--border-color);
@@ -182,7 +187,6 @@ select.form-select option {
     border-color: var(--border-glow);
 }
 
-/* Stat Cards */
 .stat-card {
     padding: 1.25rem;
     border-radius: var(--radius-md);
@@ -197,43 +201,46 @@ select.form-select option {
 }
 
 .stat-icon {
-    width: 44px;
-    height: 44px;
+    width: 42px;
+    height: 42px;
     border-radius: var(--radius-md);
     display: inline-flex;
     align-items: center;
     justify-content: center;
 }
 
-/* Buttons */
-.btn-primary-custom {
-    background: var(--primary-gradient);
-    color: #ffffff;
-    border: none;
+/* ==========================================================================
+   Buttons
+   ========================================================================== */
+.btn-primary-custom, .btn-primary {
+    background: var(--azure-blue) !important;
+    color: #FFFFFF !important;
+    border: 1px solid var(--azure-blue) !important;
     border-radius: var(--radius-sm);
-    padding: 0.65rem 1.4rem;
+    padding: 0.6rem 1.3rem;
     font-weight: 600;
     transition: var(--transition);
     display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: 0.4rem;
-    box-shadow: 0 4px 15px rgba(37, 99, 235, 0.35);
+    box-shadow: 0 2px 8px var(--azure-blue-glow);
 }
 
-.btn-primary-custom:hover {
-    opacity: 0.95;
-    color: #ffffff;
+.btn-primary-custom:hover, .btn-primary:hover {
+    background: var(--azure-blue-hover) !important;
+    border-color: var(--azure-blue-hover) !important;
+    color: #FFFFFF !important;
     transform: translateY(-1px);
-    box-shadow: 0 6px 20px rgba(37, 99, 235, 0.45);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.35);
 }
 
 .btn-outline-custom {
-    background-color: transparent;
-    border: 1px solid var(--border-color);
-    color: var(--text-main);
+    background-color: transparent !important;
+    border: 1px solid var(--border-color) !important;
+    color: var(--text-main) !important;
     border-radius: var(--radius-sm);
-    padding: 0.6rem 1.4rem;
+    padding: 0.55rem 1.25rem;
     font-weight: 500;
     transition: var(--transition);
     display: inline-flex;
@@ -243,20 +250,67 @@ select.form-select option {
 }
 
 .btn-outline-custom:hover {
-    border-color: var(--primary);
-    color: var(--primary);
-    background-color: var(--primary-light);
+    border-color: var(--azure-blue) !important;
+    color: var(--azure-blue) !important;
+    background-color: var(--primary-light) !important;
 }
 
-/* Skill Chips & Badges */
+/* ==========================================================================
+   Forms & Controls
+   ========================================================================== */
+.form-control, .form-select, .input-group-text {
+    background-color: var(--bg-subtle) !important;
+    color: var(--text-main) !important;
+    border: 1px solid var(--border-color) !important;
+    border-radius: var(--radius-sm);
+    transition: var(--transition);
+}
+
+.form-control:focus, .form-select:focus {
+    background-color: var(--bg-surface) !important;
+    color: var(--text-main) !important;
+    border-color: var(--azure-blue) !important;
+    box-shadow: 0 0 0 3px var(--azure-blue-glow) !important;
+}
+
+.form-control::placeholder {
+    color: var(--slate-grey) !important;
+    opacity: 0.85;
+}
+
+select.form-select option {
+    background-color: var(--bg-surface) !important;
+    color: var(--text-main) !important;
+}
+
+.dropdown-menu {
+    background-color: var(--bg-surface) !important;
+    border: 1px solid var(--border-color) !important;
+    box-shadow: var(--shadow-lg);
+    border-radius: var(--radius-md);
+}
+
+.dropdown-item {
+    color: var(--text-main) !important;
+    transition: var(--transition);
+}
+
+.dropdown-item:hover {
+    background-color: var(--primary-light) !important;
+    color: var(--azure-blue) !important;
+}
+
+/* ==========================================================================
+   Skill Chips, Badges & Match Scores (Coral for Missing/Low)
+   ========================================================================== */
 .skill-chip {
     display: inline-flex;
     align-items: center;
     gap: 0.3rem;
-    padding: 0.35rem 0.8rem;
+    padding: 0.35rem 0.75rem;
     border-radius: var(--radius-pill);
     background-color: var(--primary-light);
-    border: 1px solid var(--border-glow);
+    border: 1px solid var(--border-color);
     color: var(--text-main);
     font-size: 0.825rem;
     font-weight: 600;
@@ -264,14 +318,14 @@ select.form-select option {
 }
 
 .skill-chip.missing {
-    background-color: var(--danger-bg);
-    border-color: rgba(244, 63, 94, 0.3);
-    color: var(--danger);
+    background-color: var(--coral-bg);
+    border-color: rgba(244, 63, 94, 0.35);
+    color: var(--coral);
 }
 
 .skill-chip.matched {
     background-color: var(--success-bg);
-    border-color: rgba(16, 185, 129, 0.3);
+    border-color: rgba(16, 185, 129, 0.35);
     color: var(--success);
 }
 
@@ -299,14 +353,27 @@ select.form-select option {
 }
 
 .match-limited {
-    background-color: var(--bg-subtle);
-    border-color: var(--border-color);
-    color: var(--text-muted);
+    background-color: var(--coral-bg);
+    border-color: rgba(244, 63, 94, 0.4);
+    color: var(--coral);
+}
+
+/* Source Badges */
+.badge-live-job {
+    background-color: var(--azure-blue) !important;
+    color: #FFFFFF !important;
+    font-weight: 600;
+}
+
+.badge-db-job {
+    background-color: var(--slate-grey) !important;
+    color: #FFFFFF !important;
+    font-weight: 600;
 }
 
 /* Progress Bars */
 .progress-custom {
-    height: 10px;
+    height: 8px;
     border-radius: var(--radius-pill);
     background-color: var(--bg-subtle);
     overflow: hidden;
@@ -314,14 +381,14 @@ select.form-select option {
 
 .progress-bar-custom {
     height: 100%;
-    background: var(--primary-gradient);
+    background: var(--azure-blue);
     border-radius: var(--radius-pill);
-    transition: width 1s ease-in-out;
+    transition: width 0.8s ease;
 }
 
-/* ==========================================
-   ChatGPT / Gemini Style Chat & Voice UI
-   ========================================== */
+/* ==========================================================================
+   Chat & AI Assistant UI
+   ========================================================================== */
 .chat-container {
     max-width: 880px;
     margin: 0 auto;
@@ -340,7 +407,7 @@ select.form-select option {
 .chat-message-row {
     display: flex;
     margin-bottom: 1.25rem;
-    animation: fadeInSlideUp 0.25s ease-out forwards;
+    animation: fadeInSlideUp 0.2s ease-out forwards;
 }
 
 .chat-message-row.user {
@@ -361,10 +428,9 @@ select.form-select option {
 }
 
 .user .chat-bubble {
-    background: var(--primary-gradient);
-    color: #ffffff;
+    background: var(--azure-blue);
+    color: #FFFFFF;
     border-bottom-right-radius: 4px;
-    box-shadow: 0 4px 15px rgba(37, 99, 235, 0.35);
 }
 
 .bot .chat-bubble {
@@ -378,19 +444,19 @@ select.form-select option {
     width: 38px;
     height: 38px;
     border-radius: 50%;
-    background: var(--primary-gradient);
-    color: #ffffff;
+    background: var(--azure-blue);
+    color: #FFFFFF;
     display: flex;
     align-items: center;
     justify-content: center;
     margin-right: 0.75rem;
     flex-shrink: 0;
-    box-shadow: 0 0 12px rgba(6, 182, 212, 0.4);
+    box-shadow: 0 0 10px var(--azure-blue-glow);
 }
 
 .chat-composer {
     background-color: var(--bg-card);
-    border: 1px solid var(--border-glow);
+    border: 1px solid var(--border-color);
     border-radius: var(--radius-lg);
     padding: 0.85rem 1.1rem;
     box-shadow: var(--shadow-md);
@@ -408,7 +474,6 @@ select.form-select option {
     font-size: 0.975rem;
 }
 
-/* Prompt Chips */
 .prompt-chip {
     background-color: var(--bg-card);
     border: 1px solid var(--border-color);
@@ -422,13 +487,12 @@ select.form-select option {
 }
 
 .prompt-chip:hover {
-    border-color: var(--primary);
+    border-color: var(--azure-blue);
     background-color: var(--primary-light);
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+    box-shadow: 0 4px 12px var(--azure-blue-glow);
 }
 
-/* Voice Assistant UI Animations */
 .voice-mic-btn {
     border-radius: 50% !important;
     width: 42px !important;
@@ -441,34 +505,21 @@ select.form-select option {
     justify-content: center !important;
     background-color: var(--bg-card) !important;
     border: 1px solid var(--border-color) !important;
-    color: var(--primary) !important;
+    color: var(--azure-blue) !important;
     cursor: pointer;
     transition: var(--transition);
 }
 
 .voice-mic-btn:hover {
-    border-color: var(--primary) !important;
+    border-color: var(--azure-blue) !important;
     background-color: var(--primary-light) !important;
-    color: var(--primary) !important;
-}
-
-.voice-mic-btn svg, .voice-mic-btn i {
-    width: 20px !important;
-    height: 20px !important;
-    stroke: var(--primary) !important;
-    display: block !important;
 }
 
 .voice-mic-btn.listening {
-    background-color: #ef4444 !important;
-    border-color: #ef4444 !important;
-    color: #ffffff !important;
+    background-color: var(--coral) !important;
+    border-color: var(--coral) !important;
+    color: #FFFFFF !important;
     animation: voicePulse 1.2s infinite ease-in-out;
-}
-
-.voice-mic-btn.listening svg, .voice-mic-btn.listening i {
-    stroke: #ffffff !important;
-    color: #ffffff !important;
 }
 
 @keyframes voicePulse {
@@ -477,28 +528,11 @@ select.form-select option {
     100% { box-shadow: 0 0 0 0 rgba(244, 63, 94, 0); }
 }
 
-.speaking-pulse {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    color: var(--cyan);
-    font-weight: 600;
-    font-size: 0.8rem;
-}
-
-/* Typing Indicator Animation */
-.typing-indicator {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    padding: 0.4rem 0.6rem;
-}
-
 .typing-dot {
     width: 7px;
     height: 7px;
     border-radius: 50%;
-    background-color: var(--text-muted);
+    background-color: var(--slate-grey);
     animation: typingBlink 1.4s infinite ease-in-out;
 }
 
@@ -511,11 +545,13 @@ select.form-select option {
 }
 
 @keyframes fadeInSlideUp {
-    from { opacity: 0; transform: translateY(10px); }
+    from { opacity: 0; transform: translateY(8px); }
     to { opacity: 1; transform: translateY(0); }
 }
 
-/* Drag and Drop Upload Zone */
+/* ==========================================================================
+   Upload Dropzone
+   ========================================================================== */
 .upload-dropzone {
     border: 2px dashed var(--border-color);
     border-radius: var(--radius-lg);
@@ -527,20 +563,13 @@ select.form-select option {
 }
 
 .upload-dropzone:hover, .upload-dropzone.dragover {
-    border-color: var(--primary);
+    border-color: var(--azure-blue);
     background-color: var(--primary-light);
 }
 
-/* Custom Delete Confirmation Modal */
-.modal-custom .modal-content {
-    background-color: var(--bg-surface) !important;
-    color: var(--text-main) !important;
-    border: 1px solid var(--border-glow) !important;
-    border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-lg);
-}
-
-/* Timeline Roadmap */
+/* ==========================================================================
+   Timeline Roadmap
+   ========================================================================== */
 .timeline {
     position: relative;
     padding-left: 2rem;
@@ -553,7 +582,7 @@ select.form-select option {
     left: 0.75rem;
     top: 0;
     bottom: 0;
-    width: 3px;
+    width: 2px;
     background-color: var(--border-color);
 }
 
@@ -566,28 +595,28 @@ select.form-select option {
     position: absolute;
     left: -2rem;
     top: 0;
-    width: 28px;
-    height: 28px;
+    width: 26px;
+    height: 26px;
     border-radius: 50%;
     background-color: var(--bg-card);
-    border: 3px solid var(--primary);
+    border: 2px solid var(--azure-blue);
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 0.75rem;
     font-weight: bold;
-    color: var(--primary);
-    box-shadow: 0 0 10px rgba(6, 182, 212, 0.3);
+    color: var(--azure-blue);
 }
 
 .timeline-step.completed .timeline-node {
     background-color: var(--success);
     border-color: var(--success);
-    color: #ffffff;
-    box-shadow: 0 0 10px rgba(16, 185, 129, 0.4);
+    color: #FFFFFF;
 }
 
-/* Responsive & Reduced Motion */
+/* ==========================================================================
+   Responsive & Accessibility
+   ========================================================================== */
 @media (max-width: 768px) {
     .chat-bubble { max-width: 92%; }
     .chat-container { height: calc(100vh - 120px); }
