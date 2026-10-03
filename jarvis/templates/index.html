@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JARVIS Voice AI // HUD Interface</title>
+    <!-- Futuristic Typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800;900&family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div class="hud-container">
+        <!-- Top HUD Telemetry Bar -->
+        <header class="hud-header">
+            <div class="hud-telemetry left">
+                <span class="telemetry-badge">SYS: ONLINE</span>
+                <span class="telemetry-label">PROTO: MARK-VII</span>
+                <span class="telemetry-coords" id="sys-clock">00:00:00 IST</span>
+            </div>
+            <div class="hud-title">
+                <span class="brand-text">J.A.R.V.I.S.</span>
+                <span class="brand-sub">VOICE AI // NEURAL CORE</span>
+            </div>
+            <div class="hud-telemetry right">
+                <div class="status-indicator">
+                    <span class="status-dot" id="system-status-dot"></span>
+                    <span class="status-text" id="system-status-text">INITIALIZING</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Center Area: Circular Core & Particle Swarm -->
+        <main class="hud-main">
+            <!-- HUD Decorative Grid & Targeting Rings -->
+            <div class="hud-backdrop-ring outer-ring"></div>
+            <div class="hud-backdrop-ring mid-ring"></div>
+            <div class="hud-target-brackets"></div>
+
+            <!-- Central Arc Reactor / Particle Canvas Container -->
+            <div class="core-stage" id="core-stage">
+                <canvas id="jarvis-canvas" width="600" height="600"></canvas>
+                
+                <!-- Central Core Overlay Readout -->
+                <div class="core-readout">
+                    <div class="core-ring-pulse"></div>
+                    <div class="core-state-badge" id="core-state-badge">IDLE</div>
+                    <div class="core-frequency-readout" id="core-frequency-readout">44.1 kHz</div>
+                </div>
+            </div>
+
+            <!-- Speech State Status Display -->
+            <div class="state-indicator-panel">
+                <div class="state-pulse-line"></div>
+                <div class="state-label-container">
+                    <span class="state-glitch-text" id="state-display">IDLE</span>
+                    <span class="state-sub-text" id="state-sub-text">READY FOR AUDIO INPUT</span>
+                </div>
+                <div class="state-pulse-line"></div>
+            </div>
+
+            <!-- Audio Waveform Visualizer Bar (Auxiliary) -->
+            <div class="waveform-container" id="waveform-container">
+                <div class="waveform-bar"></div>
+                <div class="waveform-bar"></div>
+                <div class="waveform-bar"></div>
+                <div class="waveform-bar"></div>
+                <div class="waveform-bar"></div>
+                <div class="waveform-bar"></div>
+                <div class="waveform-bar"></div>
+                <div class="waveform-bar"></div>
+                <div class="waveform-bar"></div>
+                <div class="waveform-bar"></div>
+                <div class="waveform-bar"></div>
+                <div class="waveform-bar"></div>
+            </div>
+
+            <!-- Interactive Voice Controls -->
+            <div class="hud-controls">
+                <div class="control-buttons-row">
+                    <button id="mic-btn" class="mic-button" aria-label="Toggle Microphone" title="Click to speak">
+                        <div class="mic-glow"></div>
+                        <div class="mic-inner">
+                            <svg class="mic-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"></path>
+                                <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                                <line x1="12" y1="19" x2="12" y2="22"></line>
+                            </svg>
+                            <div class="mic-wave-ring"></div>
+                        </div>
+                    </button>
+
+                    <button id="pause-btn" class="hud-action-button pause-btn" aria-label="Pause Speech" title="Pause speech" disabled>
+                        <div class="action-btn-glow"></div>
+                        <div class="action-btn-inner">
+                            <svg class="action-icon pause-icon" id="pause-icon" viewBox="0 0 24 24" fill="currentColor">
+                                <rect x="6" y="4" width="4" height="16" rx="1"></rect>
+                                <rect x="14" y="4" width="4" height="16" rx="1"></rect>
+                            </svg>
+                            <svg class="action-icon play-icon" id="play-icon" viewBox="0 0 24 24" fill="currentColor" style="display: none;">
+                                <polygon points="6 4 20 12 6 20 6 4"></polygon>
+                            </svg>
+                            <span class="action-btn-label" id="pause-btn-label">PAUSE</span>
+                        </div>
+                    </button>
+                </div>
+                <div class="mic-caption" id="mic-caption">CLICK TO ACTIVATE VOICE</div>
+            </div>
+        </main>
+
+        <!-- Minimal HUD Transcript & Fallback Input Area -->
+        <footer class="hud-footer">
+            <div class="transcript-drawer" id="transcript-drawer">
+                <div class="transcript-header">
+                    <span class="terminal-title">TERMINAL // CONVERSATION FEED</span>
+                    <div class="terminal-actions">
+                        <button id="clear-history-btn" class="hud-btn-ghost" title="Reset Session">RESET</button>
+                        <button id="toggle-transcript-btn" class="hud-btn-ghost" title="Toggle View">COLLAPSE</button>
+                    </div>
+                </div>
+                
+                <div class="transcript-feed" id="transcript-feed">
+                    <div class="message-entry assistant intro">
+                        <div class="message-meta">JARVIS &bull; NEURAL INTERFACE</div>
+                        <div class="message-text">All systems operational, sir. Click the core or microphone to initiate voice communication.</div>
+                    </div>
+                </div>
+
+                <!-- Text Input Backup for Environments Without Audio Input -->
+                <form id="text-fallback-form" class="fallback-input-bar">
+                    <span class="input-prompt">&gt;</span>
+                    <input type="text" id="text-input" placeholder="Type a message or command (or speak into mic)..." autocomplete="off">
+                    <button type="submit" id="send-text-btn" class="hud-send-btn">TRANSMIT</button>
+                </form>
+            </div>
+        </footer>
+
+        <!-- HUD Notification / Error Toast -->
+        <div id="hud-toast" class="hud-toast" role="alert">
+            <span class="toast-indicator"></span>
+            <span class="toast-message" id="toast-message">Notification</span>
+        </div>
+    </div>
+
+    <!-- Hidden audio element for ElevenLabs playback -->
+    <audio id="tts-audio-player" preload="auto" playsinline></audio>
+
+    <script src="/static/js/app.js"></script>
+</body>
+</html>

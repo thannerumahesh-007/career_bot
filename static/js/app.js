@@ -66,8 +66,9 @@ function setTheme(theme) {
 
 // Global CSRF Token Fetcher
 function getCsrfToken() {
-    const metaToken = document.querySelector('meta[name="csrf-token"]');
-    return metaToken ? metaToken.getAttribute('content') : '';
+    return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ||
+           document.querySelector('input[name="csrf_token"]')?.value ||
+           window.csrfToken || '';
 }
 
 // Password Visibility Toggle

@@ -13,11 +13,20 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Capture initial category from URL if present
+    // Capture initial category from URL if present (supports ?category= or ?tab=)
     const urlParams = new URLSearchParams(window.location.search);
-    const catParam = urlParams.get('category');
+    const catParam = urlParams.get('category') || urlParams.get('tab');
     if (catParam) {
         activeCategory = catParam;
+        document.querySelectorAll('.category-pill-btn').forEach(btn => {
+            if (btn.getAttribute('data-category') === catParam) {
+                btn.classList.add('btn-primary-custom', 'active');
+                btn.classList.remove('btn-outline-custom');
+            } else {
+                btn.classList.remove('btn-primary-custom', 'active');
+                btn.classList.add('btn-outline-custom');
+            }
+        });
     }
 });
 
@@ -218,7 +227,7 @@ function showNewsError(message, errorType) {
                     <strong>News Service Notice:</strong> ${escapeHtml(message)}
                 </div>
             </div>
-            <button class="btn btn-sm btn-outline-dark ms-3" onclick="loadNews(true)">Try Again</button>
+            <button class="btn btn-sm btn-outline-custom ms-3" onclick="loadNews(true)">Try Again</button>
         </div>
     `;
     if (window.lucide) lucide.createIcons();

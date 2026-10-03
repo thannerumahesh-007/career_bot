@@ -10,22 +10,33 @@ import time
 from functools import wraps
 from pathlib import Path
 from flask import (
-    Flask, render_template, request, jsonify, redirect, url_for, flash, session, g, send_from_directory, make_response
+    Flask, render_template, request, jsonify, redirect, url_for, flash, session, g, send_from_directory, make_response, Response
 )
 from werkzeug.utils import secure_filename
 
 from config import Config
 from database.database import init_db, SessionLocal
-from database.models import User, UserProfile, Resume, JobModel, ChatHistory, UserJobInteraction
+from database.models import (
+    User, UserProfile, Resume, JobModel, ChatHistory, UserJobInteraction,
+    Company, UserCompanyFollow, ResumeDraft, InterviewSession
+)
 from services.career_service import CareerService
 from services.resume_service import ResumeService
 from services.job_service import CombinedJobProvider, job_provider
+from services.ats_service import ats_service
+from services.interview_service import interview_service
+from services.company_service import company_service
 from recommender.ranking import JobRanker
 from recommender.skill_gap import SkillGapAnalyzer
 from nlp.skill_extractor import SkillExtractor
 
+from werkzeug.middleware.proxy_fix import ProxyFix
+
 app = Flask(__name__)
 app.config.from_object(Config)
+
+# Enable reverse proxy support for Render (X-Forwarded-For, X-Forwarded-Proto, etc.)
+app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
 
 # Register custom Jinja filters
 app.jinja_env.filters['nl2br'] = lambda text: text.replace('\n', '<br>') if text else ''
@@ -112,18 +123,30 @@ def inject_csrf_token():
 
 
 @app.before_request
+def ensure_csrf_token():
+    """Guarantees a secure CSRF token exists on the session for all requests."""
+    if "csrf_token" not in session:
+        session["csrf_token"] = uuid.uuid4().hex
+
+
+@app.before_request
 def verify_csrf():
     """Verifies CSRF token for state-changing requests."""
     if app.config.get("TESTING") or app.config.get("WTF_CSRF_ENABLED") is False:
         return
 
     if request.method in ["POST", "PUT", "PATCH", "DELETE"]:
-        token = request.form.get("csrf_token") or request.headers.get("X-CSRF-Token")
+        token = (
+            request.headers.get("X-CSRFToken")
+            or request.headers.get("X-CSRF-Token")
+            or request.form.get("csrf_token")
+            or (request.is_json and isinstance(request.get_json(silent=True), dict) and request.get_json(silent=True).get("csrf_token"))
+        )
         expected_token = session.get("csrf_token")
         if not expected_token or token != expected_token:
             if request.path.startswith("/api/"):
-                return jsonify({"error": "CSRF validation failed. Invalid token."}), 400
-            flash("Session expired or invalid form request. Please try again.", "error")
+                return jsonify({"error": "Your session or security token has expired. Please refresh the page and try again."}), 400
+            flash("Your session or security token has expired. Please refresh the page and try again.", "error")
             return redirect(request.referrer or url_for("index"))
 
 
@@ -134,13 +157,14 @@ def set_security_headers(response):
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["X-Frame-Options"] = "SAMEORIGIN"
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
-    response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
+    response.headers["Permissions-Policy"] = "camera=(), microphone=(self), geolocation=()"
     response.headers["Content-Security-Policy"] = (
         "default-src 'self'; "
         "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://unpkg.com; "
         "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; "
         "font-src 'self' https://fonts.gstatic.com data:; "
         "img-src 'self' data: blob:; "
+        "media-src 'self' blob:; "
         "connect-src 'self';"
     )
     if g.current_user:
@@ -367,11 +391,11 @@ def jobs():
     work_mode_query = request.args.get("work_mode", "").strip()
     source_query = request.args.get("source", "").strip().lower()
 
-    # Determine source filtering (all, live, database)
-    if tab == "live" or source_query == "live":
+    # Determine source filtering (all or live; database tab has been removed)
+    if tab in ["live", "database"] or source_query in ["live", "database"]:
         active_source = "live"
-    elif tab == "database" or source_query == "database":
-        active_source = "database"
+        if tab == "database":
+            tab = "live"
     else:
         active_source = "all"
 
@@ -412,8 +436,6 @@ def jobs():
             results = [j for j in results if j.get("has_match") and j.get("overall_score", 0) >= 0.40]
         elif tab == "live":
             results = [j for j in results if j.get("is_live")]
-        elif tab == "database":
-            results = [j for j in results if not j.get("is_live")]
 
         # Attach saved indicator
         for j in results:
@@ -580,6 +602,9 @@ def resume():
                     })
                     db.commit()
 
+                    # Automatically update ATS Resume Builder draft with newly parsed resume
+                    _get_or_create_user_draft(db, g.current_user.id, force_refresh=True)
+
                     resumes = db.query(Resume).filter_by(user_id=g.current_user.id).order_by(Resume.uploaded_at.desc()).all()
                     flash("Resume uploaded and parsed successfully! Profile skills replaced.", "success")
                 except Exception as e:
@@ -648,10 +673,19 @@ def profile():
 
 @app.route("/news")
 def news():
-    """Corporate & Technology News Page."""
+    """Corporate & Technology News Page with company following support."""
     category = request.args.get("category", "all").strip().lower()
     query = request.args.get("q", "").strip()
-    news_data = news_service.fetch_corporate_news(category=category, search_query=query)
+
+    followed_companies = []
+    if g.current_user:
+        followed_companies = company_service.get_user_followed_companies(g.current_user.id)
+
+    news_data = news_service.fetch_corporate_news(
+        category=category,
+        search_query=query,
+        followed_companies=followed_companies
+    )
     return render_template(
         "news.html",
         articles=news_data.get("articles", []),
@@ -662,7 +696,8 @@ def news():
         news_status=news_data.get("status", "ok"),
         error_message=news_data.get("message", ""),
         error_type=news_data.get("error_type", ""),
-        last_updated=news_data.get("last_updated", "")
+        last_updated=news_data.get("last_updated", ""),
+        followed_companies=followed_companies
     )
 
 
@@ -674,7 +709,17 @@ def api_news():
     category = request.args.get("category", "all").strip().lower()
     query = request.args.get("q", "").strip()
     force_refresh = request.args.get("refresh", "false").lower() in ("true", "1")
-    news_data = news_service.fetch_corporate_news(category=category, search_query=query, force_refresh=force_refresh)
+
+    followed_companies = []
+    if g.current_user:
+        followed_companies = company_service.get_user_followed_companies(g.current_user.id)
+
+    news_data = news_service.fetch_corporate_news(
+        category=category,
+        search_query=query,
+        force_refresh=force_refresh,
+        followed_companies=followed_companies
+    )
     return jsonify(news_data)
 
 
@@ -694,7 +739,7 @@ def api_news_ai_summary():
 
 @app.route("/api/health", methods=["GET"])
 def api_health():
-    """Public health check endpoint indicating DB, NLP, and Gemini status."""
+    """Public health check endpoint indicating DB, NLP, Gemini, and JARVIS Voice status."""
     db = SessionLocal()
     db_status = "connected"
     try:
@@ -706,6 +751,12 @@ def api_health():
 
     gemini_available = career_service.gemini_service.is_available()
 
+    try:
+        from services.elevenlabs_service import elevenlabs_service
+        elevenlabs_configured = elevenlabs_service.is_configured()
+    except Exception:
+        elevenlabs_configured = False
+
     return jsonify({
         "status": "healthy" if db_status == "connected" else "degraded",
         "database": db_status,
@@ -713,6 +764,9 @@ def api_health():
         "resume_parser": "ready",
         "auth": "ready",
         "gemini": "available" if gemini_available else "unavailable",
+        "gemini_configured": gemini_available,
+        "elevenlabs_configured": elevenlabs_configured,
+        "jarvis": "ready",
         "fallback_mode": not gemini_available
     }), 200
 
@@ -940,6 +994,49 @@ def api_chat_clear():
         db.close()
 
 
+@app.route("/api/tts", methods=["POST"])
+@login_required
+def api_tts():
+    """
+    Converts text response to ElevenLabs spoken voice audio.
+    Cleans all Markdown and symbols so only natural spoken English is sent.
+    Streams back audio/mpeg binary content.
+    """
+    data = request.get_json(silent=True) or {}
+    raw_text = data.get("text", "").strip()
+    if not raw_text:
+        return jsonify({
+            "success": False,
+            "error": "Text cannot be empty for voice synthesis."
+        }), 400
+
+    from services.text_cleaner import clean_text_for_tts
+    cleaned_speech_text = clean_text_for_tts(raw_text)
+    if not cleaned_speech_text:
+        cleaned_speech_text = raw_text
+
+    from services.elevenlabs_service import elevenlabs_service
+    audio_bytes, content_type, error = elevenlabs_service.text_to_speech(cleaned_speech_text)
+
+    if error:
+        is_plan_limitation = "plan limitation" in error.lower() or "paid_plan_required" in error.lower()
+        status_code = 402 if is_plan_limitation else (400 if "not configured" in error or "authentication" in error or "key notice" in error else 502)
+        return jsonify({
+            "success": False,
+            "error": error,
+            "is_plan_limitation": is_plan_limitation
+        }), status_code
+
+    return Response(
+        audio_bytes,
+        mimetype=content_type or "audio/mpeg",
+        headers={
+            "Content-Disposition": "inline; filename=jarvis_response.mp3",
+            "Cache-Control": "no-cache"
+        }
+    )
+
+
 @app.route("/api/profile", methods=["GET", "POST"])
 @login_required
 def api_profile():
@@ -1095,6 +1192,13 @@ def api_resume_delete(resume_id):
             })
         db.commit()
 
+        # Update or sync ATS Resume Builder draft with deleted resume
+        if not latest_resume:
+            db.query(ResumeDraft).filter_by(user_id=g.current_user.id).delete()
+            db.commit()
+        else:
+            _get_or_create_user_draft(db, g.current_user.id, force_refresh=True)
+
         return jsonify({
             "status": "success",
             "message": "Resume deleted successfully. Profile skills updated.",
@@ -1105,6 +1209,450 @@ def api_resume_delete(resume_id):
         return jsonify({"error": "Failed to delete resume record."}), 500
     finally:
         db.close()
+
+
+# ==========================================
+# --- COMPANY DIRECTORY & FOLLOWING ROUTES ---
+# ==========================================
+
+@app.route("/companies")
+def companies_page():
+    """Company Directory & personalized following page."""
+    search_query = request.args.get("q", "").strip()
+    user_id = g.current_user.id if g.current_user else None
+    companies = company_service.get_companies(user_id=user_id, search_query=search_query)
+    followed_names = company_service.get_user_followed_companies(user_id) if user_id else []
+    return render_template(
+        "companies.html",
+        companies=companies,
+        followed_names=followed_names,
+        search_query=search_query
+    )
+
+
+@app.route("/api/companies", methods=["GET"])
+def api_companies():
+    """JSON API endpoint returning company directory with follow statuses."""
+    search_query = request.args.get("q", "").strip()
+    user_id = g.current_user.id if g.current_user else None
+    companies = company_service.get_companies(user_id=user_id, search_query=search_query)
+    return jsonify({
+        "status": "success",
+        "total": len(companies),
+        "companies": companies
+    }), 200
+
+
+@app.route("/api/companies/follow/<path:company_name>", methods=["POST"])
+@login_required
+def api_company_follow(company_name):
+    """Follows a company for the authenticated user."""
+    result = company_service.follow_company(g.current_user.id, company_name)
+    if result.get("success"):
+        return jsonify(result), 200
+    return jsonify(result), 400
+
+
+@app.route("/api/companies/unfollow/<path:company_name>", methods=["POST"])
+@login_required
+def api_company_unfollow(company_name):
+    """Unfollows a company for the authenticated user."""
+    result = company_service.unfollow_company(g.current_user.id, company_name)
+    if result.get("success"):
+        return jsonify(result), 200
+    return jsonify(result), 400
+
+
+# ==========================================
+# --- ATS RESUME BUILDER ROUTES ---
+# ==========================================
+
+def _get_or_create_user_draft(db, user_id: int, force_refresh: bool = False) -> ResumeDraft:
+    """Helper to retrieve or initialize an authentic draft resume for a user using parsed resume data."""
+    import json
+    import re
+    from services.resume_service import ResumeService
+
+    draft = db.query(ResumeDraft).filter_by(user_id=user_id).order_by(ResumeDraft.updated_at.desc()).first()
+    if draft and not force_refresh:
+        return draft
+
+    user = db.query(User).filter_by(id=user_id).first()
+    profile = db.query(UserProfile).filter_by(user_id=user_id).first()
+    resume = db.query(Resume).filter_by(user_id=user_id).order_by(Resume.uploaded_at.desc()).first()
+
+    full_name = user.full_name if user and user.full_name else "Candidate Name"
+    email = user.email if user else ""
+    phone = ""
+    location = profile.location if profile and profile.location else ""
+    linkedin = ""
+    github = ""
+
+    skills = profile.skills if (profile and profile.skills) else []
+    target_role = (profile.target_roles[0] if (profile and profile.target_roles) else "Software Engineer")
+    summary = ""
+    exp_items = []
+    proj_items = []
+    edu_items = []
+
+    if resume:
+        raw_text = resume.extracted_text or ""
+        ex_data = resume.extracted_data or {}
+
+        # 1. Contact Info Extraction
+        email_match = re.search(r'[\w\.-]+@[\w\.-]+\.\w+', raw_text)
+        if email_match and not email:
+            email = email_match.group(0)
+
+        phone_match = re.search(r'(?:\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}|\+91[\s-]?\d{10}|\b\d{10}\b', raw_text)
+        if phone_match:
+            phone = phone_match.group(0).strip()
+
+        li_match = re.search(r'(?:https?://)?(?:www\.)?linkedin\.com/in/([a-zA-Z0-9_-]+)', raw_text)
+        if li_match:
+            linkedin = li_match.group(0)
+
+        gh_match = re.search(r'(?:https?://)?(?:www\.)?github\.com/([a-zA-Z0-9_-]+)', raw_text)
+        if gh_match:
+            github = gh_match.group(0)
+
+        if not skills and ex_data.get("skills"):
+            skills = ex_data.get("skills")
+
+        if ex_data.get("target_roles") and not (profile and profile.target_roles):
+            target_role = ex_data["target_roles"][0]
+
+        # 2. Section Parsing
+        sections_dict = ResumeService().parse_sections(raw_text)
+        exp_text = sections_dict.get("experience", "").strip()
+        proj_text = sections_dict.get("projects", "").strip()
+        edu_text = sections_dict.get("education", "").strip()
+
+        if exp_text:
+            exp_bullets = [line.strip().lstrip("•-* ") for line in exp_text.split("\n") if len(line.strip()) > 10][:4]
+            if not exp_bullets and len(exp_text) > 10:
+                exp_bullets = [exp_text[:180]]
+            exp_items.append({
+                "title": f"{target_role}",
+                "organization": "Professional Experience",
+                "period": "Recent",
+                "bullets": exp_bullets if exp_bullets else ["Developed scalable solutions and contributed to team deliverables."]
+            })
+
+        if proj_text:
+            proj_bullets = [line.strip().lstrip("•-* ") for line in proj_text.split("\n") if len(line.strip()) > 10][:4]
+            if not proj_bullets and len(proj_text) > 10:
+                proj_bullets = [proj_text[:180]]
+            proj_items.append({
+                "title": "Technical Project",
+                "organization": "Project Work",
+                "period": "Recent",
+                "bullets": proj_bullets if proj_bullets else ["Architected and implemented core application features."]
+            })
+
+        edu_summary = edu_text or (profile.education if profile else "") or ex_data.get("education", "")
+        if edu_summary:
+            edu_items.append({
+                "title": edu_summary[:80],
+                "organization": "University / Institution",
+                "period": "Completed",
+                "bullets": ["Graduated with core technical coursework."]
+            })
+
+        if skills:
+            summary = f"Results-driven {target_role} with expertise in {', '.join(skills[:4])}. Proven ability to build and deploy reliable software solutions."
+        else:
+            summary = f"Results-driven {target_role} dedicated to applying technical skills and modern best practices."
+    else:
+        # Fallback when no resume uploaded yet
+        if profile and profile.education:
+            edu_items.append({
+                "title": profile.education,
+                "organization": "University / College",
+                "period": "Recent",
+                "bullets": []
+            })
+        if skills:
+            summary = f"Aspiring {target_role} with knowledge in {', '.join(skills[:4])}."
+
+    contact = {
+        "full_name": full_name,
+        "email": email,
+        "phone": phone,
+        "location": location,
+        "linkedin": linkedin,
+        "github": github
+    }
+
+    sections = [
+        {
+            "heading": "Technical Skills",
+            "type": "skills",
+            "content": ", ".join(skills)
+        },
+        {
+            "heading": "Work Experience",
+            "type": "experience",
+            "items": exp_items
+        },
+        {
+            "heading": "Projects",
+            "type": "projects",
+            "items": proj_items
+        },
+        {
+            "heading": "Education",
+            "type": "education",
+            "items": edu_items
+        }
+    ]
+
+    if draft:
+        draft.title = f"{full_name} - {target_role}"
+        draft.target_role = target_role
+        draft.contact_info_json = json.dumps(contact)
+        draft.summary = summary
+        draft.sections_json = json.dumps(sections)
+        score_res = ats_service.calculate_ats_score(draft.to_dict())
+        draft.ats_score = score_res.get("overall_score", 65)
+        draft.ats_breakdown = score_res
+        db.commit()
+        db.refresh(draft)
+        return draft
+
+    new_draft = ResumeDraft(
+        user_id=user_id,
+        title=f"{full_name} - {target_role}",
+        target_role=target_role,
+        contact_info_json=json.dumps(contact),
+        summary=summary,
+        sections_json=json.dumps(sections),
+        ats_score=0,
+        ats_breakdown_json="{}"
+    )
+    db.add(new_draft)
+    db.commit()
+    db.refresh(new_draft)
+
+    score_res = ats_service.calculate_ats_score(new_draft.to_dict())
+    new_draft.ats_score = score_res.get("overall_score", 65)
+    new_draft.ats_breakdown = score_res
+    db.commit()
+    db.refresh(new_draft)
+    return new_draft
+
+
+@app.route("/resume/builder")
+@login_required
+def resume_builder_page():
+    """ATS Resume Builder UI Page."""
+    db = SessionLocal()
+    try:
+        user_resume = db.query(Resume).filter_by(user_id=g.current_user.id).order_by(Resume.uploaded_at.desc()).first()
+        has_parsed_resume = bool(user_resume and (user_resume.extracted_text or user_resume.extracted_data))
+        draft = _get_or_create_user_draft(db, g.current_user.id)
+        return render_template(
+            "resume_builder.html",
+            draft=draft.to_dict(),
+            has_parsed_resume=has_parsed_resume
+        )
+    finally:
+        db.close()
+
+
+@app.route("/api/resume/builder/draft", methods=["GET"])
+@login_required
+def api_resume_builder_get_draft():
+    """Fetches user's current ATS resume draft."""
+    db = SessionLocal()
+    try:
+        draft = _get_or_create_user_draft(db, g.current_user.id)
+        return jsonify({"status": "success", "draft": draft.to_dict()}), 200
+    finally:
+        db.close()
+
+
+@app.route("/api/resume/builder/save", methods=["POST"])
+@login_required
+def api_resume_builder_save():
+    """Saves user's ATS resume draft and recalculates ATS score."""
+    data = request.get_json() or {}
+    import json
+
+    db = SessionLocal()
+    try:
+        draft = _get_or_create_user_draft(db, g.current_user.id)
+        if "title" in data:
+            draft.title = data["title"].strip()
+        if "target_role" in data:
+            draft.target_role = data["target_role"].strip()
+        if "contact_info" in data:
+            draft.contact_info = data["contact_info"]
+        if "summary" in data:
+            draft.summary = data["summary"].strip()
+        if "sections" in data:
+            draft.sections = data["sections"]
+
+        # Recalculate score
+        target_jd = data.get("job_description", "")
+        score_res = ats_service.calculate_ats_score(draft.to_dict(), target_job_description=target_jd)
+        draft.ats_score = score_res.get("overall_score", 0)
+        draft.ats_breakdown = score_res
+
+        db.commit()
+        db.refresh(draft)
+
+        return jsonify({
+            "status": "success",
+            "message": "Resume draft saved successfully.",
+            "draft": draft.to_dict()
+        }), 200
+    except Exception as e:
+        db.rollback()
+        return jsonify({"status": "error", "message": str(e)}), 500
+    finally:
+        db.close()
+
+
+@app.route("/api/resume/builder/ats-score", methods=["POST"])
+@login_required
+def api_resume_builder_score():
+    """Calculates ATS score and breakdown against target job description."""
+    data = request.get_json() or {}
+    resume_data = data.get("resume_data", {})
+    job_desc = data.get("job_description", "")
+
+    if not resume_data:
+        db = SessionLocal()
+        try:
+            draft = _get_or_create_user_draft(db, g.current_user.id)
+            resume_data = draft.to_dict()
+        finally:
+            db.close()
+
+    result = ats_service.calculate_ats_score(resume_data, target_job_description=job_desc)
+    return jsonify({"status": "success", "result": result}), 200
+
+
+@app.route("/api/resume/builder/optimize-bullet", methods=["POST"])
+@login_required
+def api_resume_builder_optimize_bullet():
+    """AI bullet enhancement with metrics and action verbs."""
+    data = request.get_json() or {}
+    bullet = data.get("bullet", "").strip()
+    role = data.get("role", "Software Engineer").strip()
+
+    if not bullet:
+        return jsonify({"status": "error", "message": "Bullet text is required."}), 400
+
+    enhanced = ats_service.enhance_bullet_point(bullet, role)
+    return jsonify({
+        "status": "success",
+        "original": bullet,
+        "enhanced": enhanced
+    }), 200
+
+
+@app.route("/api/resume/builder/pdf", methods=["GET"])
+@login_required
+def api_resume_builder_pdf():
+    """Generates and downloads clean single-column ATS-friendly PDF."""
+    db = SessionLocal()
+    try:
+        draft = _get_or_create_user_draft(db, g.current_user.id)
+        draft_dict = draft.to_dict()
+        pdf_bytes = ats_service.generate_ats_pdf(draft_dict)
+
+        filename = f"{draft.target_role.replace(' ', '_')}_Resume.pdf"
+        return Response(
+            pdf_bytes,
+            mimetype="application/pdf",
+            headers={
+                "Content-Disposition": f"attachment; filename=\"{filename}\"",
+                "Cache-Control": "no-cache"
+            }
+        )
+    except Exception as e:
+        return jsonify({"status": "error", "message": f"Failed to generate PDF: {str(e)}"}), 500
+    finally:
+        db.close()
+
+
+# ==========================================
+# --- AI MOCK INTERVIEW SIMULATOR ROUTES ---
+# ==========================================
+
+@app.route("/interview")
+@login_required
+def interview_page():
+    """AI Mock Interview UI Page."""
+    sessions = interview_service.get_user_sessions(g.current_user.id)
+    return render_template(
+        "interview.html",
+        sessions=sessions
+    )
+
+
+@app.route("/api/interview/start", methods=["POST"])
+@login_required
+def api_interview_start():
+    """Starts a new 5-question AI mock interview session."""
+    data = request.get_json() or {}
+    role = data.get("target_role", "Software Engineer").strip()
+    difficulty = data.get("difficulty", "Intermediate").strip()
+    interview_type = data.get("interview_type", "Technical").strip()
+
+    try:
+        result = interview_service.start_session(
+            user_id=g.current_user.id,
+            target_role=role,
+            difficulty=difficulty,
+            interview_type=interview_type
+        )
+        return jsonify(result), 200
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route("/api/interview/answer", methods=["POST"])
+@login_required
+def api_interview_answer():
+    """Submits candidate's answer for evaluation and turn progression."""
+    data = request.get_json() or {}
+    session_id = data.get("session_id")
+    answer = data.get("answer", "").strip()
+
+    if not session_id:
+        return jsonify({"success": False, "error": "session_id is required."}), 400
+
+    try:
+        result = interview_service.submit_answer(
+            session_id=int(session_id),
+            user_id=g.current_user.id,
+            answer=answer
+        )
+        status_code = 200 if result.get("success") else 400
+        return jsonify(result), status_code
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route("/api/interview/session/<int:session_id>", methods=["GET"])
+@login_required
+def api_interview_session(session_id):
+    """Retrieves full details of a specific interview session."""
+    session_data = interview_service.get_session(session_id, g.current_user.id)
+    if not session_data:
+        return jsonify({"success": False, "error": "Interview session not found."}), 404
+    return jsonify({"success": True, "session": session_data}), 200
+
+
+@app.route("/api/interview/history", methods=["GET"])
+@login_required
+def api_interview_history():
+    """Returns all past interview sessions for the logged-in user."""
+    sessions = interview_service.get_user_sessions(g.current_user.id)
+    return jsonify({"success": True, "sessions": sessions}), 200
 
 
 # --- ERROR HANDLERS ---

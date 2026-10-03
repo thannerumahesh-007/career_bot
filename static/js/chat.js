@@ -101,21 +101,39 @@ document.addEventListener('DOMContentLoaded', () => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
     function getSelectedSpeechLang() {
-        if (!voiceLangSelect) return 'en-IN';
+        if (!voiceLangSelect) return localStorage.getItem('careerbot_language') || 'en-IN';
         const val = voiceLangSelect.value;
-        const validCodes = ['en-IN', 'en-US', 'hi-IN', 'te-IN'];
+        const validCodes = ['en-IN', 'en-US', 'hi-IN', 'te-IN', 'ta-IN', 'kn-IN', 'ml-IN'];
         return validCodes.includes(val) ? val : 'en-IN';
     }
 
-    // Voice Language Selector Listener
+    // Initialize Language from persistent local preference
+    const savedLang = localStorage.getItem('careerbot_language') || 'en-IN';
     if (voiceLangSelect) {
+        voiceLangSelect.value = savedLang;
         voiceLangSelect.addEventListener('change', () => {
+            const newLang = voiceLangSelect.value;
+            localStorage.setItem('careerbot_language', newLang);
+            const jarvisSelect = document.getElementById('jarvisLangSelect');
+            if (jarvisSelect) jarvisSelect.value = newLang;
+            if (window.jarvisHUDInstance) {
+                window.jarvisHUDInstance.setLanguage(newLang);
+            }
             if (recognition && isListening) {
                 try { recognition.stop(); } catch (e) {}
                 stopListening();
             }
         });
     }
+
+    // Render historical messages on page load
+    document.querySelectorAll('.chat-message-content').forEach(el => {
+        const raw = el.getAttribute('data-raw');
+        if (raw && el.closest('.chat-message-row.bot')) {
+            el.innerHTML = renderMessageContent(raw);
+        }
+    });
+    if (window.lucide) lucide.createIcons();
 
     function createRecognitionInstance() {
         if (!SpeechRecognition) return null;
@@ -215,6 +233,12 @@ document.addEventListener('DOMContentLoaded', () => {
     if (micBtn) {
         micBtn.addEventListener('click', (e) => {
             e.preventDefault();
+            // Requirement 1: Open JARVIS live voice interface instead of old microphone/chat behavior
+            if (window.jarvisHUD) {
+                window.jarvisHUD.openLiveMode();
+                return;
+            }
+
             if (!SpeechRecognition) {
                 clearVoiceBanners();
                 showVoiceErrorBanner("Speech recognition is not supported in this browser. Please use Google Chrome or Microsoft Edge.");
@@ -338,11 +362,89 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    function renderMessageContent(rawText) {
+        if (!rawText) return '';
+
+        let text = String(rawText);
+
+        // 1. Strip raw markdown escape artifacts
+        text = text.replace(/\\r\\n/g, '\n').replace(/\\n/g, '\n');
+        text = text.replace(/\\+(#{1,6})/g, '$1');
+        text = text.replace(/\\([#*_`~[\]()\-+!])/g, '$1');
+        text = text.replace(/\\+(\s*(\n|$))/g, '$2');
+        text = text.replace(/^\s*\\\s*$/gm, '');
+
+        // 2. Tokenize Markdown Links [Label](URL) to protect against escaping
+        const linkTokens = [];
+        text = text.replace(/\[([^\]]+)\]\((https?:\/\/[^\s\)]+|\/[^\s\)]+)\)/g, (match, label, url) => {
+            const token = `___CB_MD_LINK_${linkTokens.length}___`;
+            linkTokens.push({ label, url });
+            return token;
+        });
+
+        // 3. Tokenize standalone bare URLs
+        const bareUrls = [];
+        text = text.replace(/(https?:\/\/[^\s<>"'`]+)/g, (match, url) => {
+            const token = `___CB_BARE_URL_${bareUrls.length}___`;
+            bareUrls.push(url);
+            return token;
+        });
+
+        // 4. Safely escape HTML to prevent XSS
+        const tempDiv = document.createElement('div');
+        tempDiv.innerText = text;
+        let safeHtml = tempDiv.innerHTML;
+
+        // 5. Restore Markdown links as styled clickable links with external-link icon
+        linkTokens.forEach((item, idx) => {
+            const token = `___CB_MD_LINK_${idx}___`;
+            const safeLabelDiv = document.createElement('div');
+            safeLabelDiv.innerText = item.label;
+            const safeLabel = safeLabelDiv.innerHTML;
+            const safeUrl = item.url.replace(/"/g, '&quot;');
+            const linkHtml = `<a href="${safeUrl}" target="_blank" rel="noopener noreferrer" class="chat-job-link fw-semibold text-primary text-decoration-underline d-inline-flex align-items-center gap-1">${safeLabel} <i data-lucide="external-link" style="width: 12px; height: 12px;"></i></a>`;
+            safeHtml = safeHtml.replace(token, linkHtml);
+        });
+
+        // 6. Restore bare URLs
+        bareUrls.forEach((url, idx) => {
+            const token = `___CB_BARE_URL_${idx}___`;
+            const safeUrl = url.replace(/"/g, '&quot;');
+            const linkHtml = `<a href="${safeUrl}" target="_blank" rel="noopener noreferrer" class="chat-job-link fw-semibold text-primary text-decoration-underline d-inline-flex align-items-center gap-1">${safeUrl} <i data-lucide="external-link" style="width: 12px; height: 12px;"></i></a>`;
+            safeHtml = safeHtml.replace(token, linkHtml);
+        });
+
+        // 7. Format Headings
+        safeHtml = safeHtml.replace(/^### (.*$)/gm, '<h5 class="fw-bold text-main mt-3 mb-1.5">$1</h5>');
+        safeHtml = safeHtml.replace(/^## (.*$)/gm, '<h4 class="fw-bold text-main mt-3 mb-1.5">$1</h4>');
+        safeHtml = safeHtml.replace(/^# (.*$)/gm, '<h3 class="fw-bold text-main mt-3 mb-1.5">$1</h3>');
+
+        // 8. Format Bold and Italics
+        safeHtml = safeHtml.replace(/\*\*(.*?)\*\*/g, '<strong class="fw-bold text-main">$1</strong>');
+        safeHtml = safeHtml.replace(/\*([^\*]+)\*/g, '<em>$1</em>');
+
+        // 9. Format Source badges
+        safeHtml = safeHtml.replace(/Source:\s*Live Internet Job/gi, '<span class="badge bg-primary-light text-primary border border-primary-subtle rounded-pill px-2 py-0.5"><i data-lucide="globe" style="width: 11px; height: 11px;" class="me-1"></i>Live Internet Job</span>');
+        safeHtml = safeHtml.replace(/Source:\s*Saved Job/gi, '<span class="badge bg-success-light text-success border border-success-subtle rounded-pill px-2 py-0.5"><i data-lucide="bookmark" style="width: 11px; height: 11px;" class="me-1"></i>Saved Job</span>');
+        safeHtml = safeHtml.replace(/Source:\s*Matched Job/gi, '<span class="badge bg-primary-light text-primary border border-primary-subtle rounded-pill px-2 py-0.5"><i data-lucide="sparkles" style="width: 11px; height: 11px;" class="me-1"></i>Matched Job</span>');
+
+        // 10. Format Bullet points and Numbered lists
+        safeHtml = safeHtml.replace(/^[•\-\*]\s+(.*$)/gm, '<div class="chat-bullet d-flex align-items-start gap-2 mb-1"><span class="text-primary fw-bold">•</span><div>$1</div></div>');
+        safeHtml = safeHtml.replace(/^(\d+)\.\s+(.*$)/gm, '<div class="chat-numbered d-flex align-items-start gap-2 mb-1"><span class="text-primary fw-bold">$1.</span><div>$2</div></div>');
+
+        // 11. Normalize newlines
+        safeHtml = safeHtml.replace(/\n\n+/g, '<div class="my-2"></div>');
+        safeHtml = safeHtml.replace(/\n/g, '<br>');
+
+        return safeHtml;
+    }
+    window.renderMessageContent = renderMessageContent;
+
     function appendMessage(sender, text) {
         const row = document.createElement('div');
         row.className = `chat-message-row ${sender}`;
         const isBot = sender === 'bot';
-        const escapedText = escapeHtml(text).replace(/\n/g, '<br>');
+        const formattedText = isBot ? renderMessageContent(text) : escapeHtml(text).replace(/\n/g, '<br>');
 
         row.innerHTML = `
             ${isBot ? `
@@ -351,7 +453,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
             ` : ''}
             <div class="chat-bubble">
-                <div style="white-space: pre-wrap;">${escapedText}</div>
+                <div class="chat-message-content" data-raw="${escapeHtml(text)}">${formattedText}</div>
                 ${isBot ? `
                     <div class="mt-2 text-end d-flex align-items-center justify-content-end gap-2">
                         <button class="btn btn-sm btn-link text-muted p-0 speak-btn" onclick="speakMessageText(this)" title="Listen to message">
@@ -368,6 +470,13 @@ document.addEventListener('DOMContentLoaded', () => {
         chatStream.appendChild(row);
         if (window.lucide) lucide.createIcons();
     }
+
+    // Expose appendMessage globally so JARVIS voice interactions are reflected in CareerBot chat
+    window.careerbotAppendMessage = function(sender, text) {
+        if (emptyState) emptyState.style.display = 'none';
+        appendMessage(sender, text);
+        scrollToBottom();
+    };
 
     function showTypingIndicator() {
         const id = 'typing_' + Date.now();

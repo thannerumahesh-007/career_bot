@@ -13,7 +13,7 @@ import urllib.error
 from datetime import datetime, timezone
 from typing import Dict, Any, List, Optional
 from config import Config
-from services.gemini_service import gemini_service
+from services.model_router import model_router
 
 # Predefined categories focused on corporate, IT, and global business
 NEWS_CATEGORIES = {
@@ -21,6 +21,11 @@ NEWS_CATEGORIES = {
         "label": "All News",
         "icon": "globe",
         "query": '(technology OR AI OR "artificial intelligence" OR startup OR corporate OR business OR software OR IT OR semiconductor OR "layoffs" OR "hiring")'
+    },
+    "following": {
+        "label": "Following",
+        "icon": "building",
+        "query": ""
     },
     "tech_ai": {
         "label": "AI & Tech",
@@ -72,9 +77,10 @@ class NewsService:
         category: str = "all",
         search_query: str = "",
         force_refresh: bool = False,
-        page_size: int = 30
+        page_size: int = 30,
+        followed_companies: Optional[List[str]] = None
     ) -> Dict[str, Any]:
-        """Fetches live corporate news from News API with error handling and caching."""
+        """Fetches live corporate news from News API with error handling, caching, and company following."""
         api_key = self.api_key
         if not api_key:
             return {
@@ -91,7 +97,33 @@ class NewsService:
             cat_key = "all"
 
         clean_query = search_query.strip()
-        cache_key = f"{cat_key}_{clean_query.lower()}"
+        
+        # Handle "following" category with empty state
+        if cat_key == "following":
+            if not followed_companies:
+                return {
+                    "status": "ok",
+                    "category": "following",
+                    "category_label": "Following",
+                    "query": clean_query,
+                    "total": 0,
+                    "articles": [],
+                    "message": "You are not following any companies yet. Visit the Companies section to follow companies for personalized updates.",
+                    "last_updated": datetime.now(timezone.utc).strftime("%I:%M %p UTC")
+                }
+            comp_terms = " OR ".join([f'"{c}"' for c in followed_companies[:10]])
+            if clean_query:
+                query_str = f"({clean_query}) AND ({comp_terms}) AND (company OR corporate OR business OR tech OR hiring OR layoffs OR leadership)"
+            else:
+                query_str = f"({comp_terms}) AND (company OR corporate OR business OR tech OR hiring OR layoffs OR leadership OR stock)"
+            cache_key = f"following_{','.join(sorted(followed_companies[:10]))}_{clean_query.lower()}"
+        else:
+            cache_key = f"{cat_key}_{clean_query.lower()}"
+            if clean_query:
+                # User search takes precedence; restrict to corporate/business domain
+                query_str = f"({clean_query}) AND (company OR corporate OR business OR tech OR technology OR IT OR startup OR industry OR market)"
+            else:
+                query_str = NEWS_CATEGORIES[cat_key]["query"]
 
         # In-memory cache check (unless explicit refresh requested)
         now = time.time()
@@ -99,13 +131,6 @@ class NewsService:
             entry = self._cache[cache_key]
             if now - entry["timestamp"] < self.cache_ttl:
                 return entry["data"]
-
-        # Build query string
-        if clean_query:
-            # User search takes precedence; restrict to corporate/business domain
-            query_str = f"({clean_query}) AND (company OR corporate OR business OR tech OR technology OR IT OR startup OR industry OR market)"
-        else:
-            query_str = NEWS_CATEGORIES[cat_key]["query"]
 
         params = {
             "q": query_str,
@@ -237,7 +262,7 @@ class NewsService:
         return result_data
 
     def generate_ai_summary(self, title: str, description: str, content: str = "") -> str:
-        """Uses Gemini AI to generate a concise, grounded 2-sentence executive takeaway."""
+        """Uses Gemini AI via ModelRouter to generate a concise, grounded 2-sentence executive takeaway."""
         if not title:
             return "No article details available to summarize."
 
@@ -253,9 +278,10 @@ class NewsService:
         )
 
         try:
-            summary = gemini_service.generate_response(prompt, max_tokens=120)
+            summary = model_router.generate_content(task="news", prompt=prompt)
             if summary and len(summary.strip()) > 10:
-                return summary.strip()
+                from services.text_cleaner import clean_chat_response
+                return clean_chat_response(summary.strip())
         except Exception:
             pass
 

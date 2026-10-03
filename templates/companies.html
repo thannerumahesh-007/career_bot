@@ -1,0 +1,174 @@
+{% extends "base.html" %}
+
+{% block title %}Company Intelligence & Following — CareerBot{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Header Banner -->
+    <div class="card card-custom p-4 mb-4 text-white border-0 position-relative overflow-hidden" style="background: linear-gradient(135deg, #18181B 0%, #27272A 60%, #3B82F6 100%) !important;">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <span class="badge bg-white text-primary px-3 py-1.5 rounded-pill fw-semibold small mb-2 d-inline-flex align-items-center gap-1">
+                    <i data-lucide="building-2" style="width: 14px; height: 14px;"></i> Enterprise & Tech Network
+                </span>
+                <h2 class="fw-bold mb-1">Company Directory & Following 🏢</h2>
+                <p class="mb-0 text-white-50">
+                    Follow premier tech companies, IT conglomerates, and AI startups to customize your real-time corporate news stream and hiring alerts.
+                </p>
+            </div>
+            <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                <a href="{{ url_for('news', category='following') }}" class="btn btn-light text-primary fw-bold rounded-pill px-4 d-inline-flex align-items-center gap-2 shadow-sm">
+                    <i data-lucide="newspaper" style="width: 16px; height: 16px;"></i> My Followed News Feed
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Search Bar & Statistics -->
+    <div class="card card-custom p-3 p-md-4 mb-4">
+        <form method="GET" action="{{ url_for('companies_page') }}" class="row g-2 align-items-center">
+            <div class="col-12 col-md-9">
+                <div class="input-group">
+                    <span class="input-group-text bg-subtle border-color text-muted">
+                        <i data-lucide="search" style="width: 16px; height: 16px;"></i>
+                    </span>
+                    <input type="text" name="q" class="form-control bg-subtle text-main border-color"
+                           placeholder="Search by company name, industry, or domain (e.g. Google, TCS, AI, Cloud)..."
+                           value="{{ search_query }}">
+                    {% if search_query %}
+                    <a href="{{ url_for('companies_page') }}" class="btn btn-outline-custom" title="Clear search">
+                        <i data-lucide="x" style="width: 14px; height: 14px;"></i>
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="col-12 col-md-3">
+                <button type="submit" class="btn btn-primary-custom w-100 d-inline-flex align-items-center justify-content-center gap-2">
+                    <i data-lucide="filter" style="width: 16px; height: 16px;"></i> Filter Directory
+                </button>
+            </div>
+        </form>
+
+        <div class="d-flex align-items-center justify-content-between mt-3 pt-3 border-top border-color flex-wrap gap-2">
+            <span class="text-muted small">
+                Showing <strong>{{ companies|length }}</strong> organizations
+            </span>
+            <span class="badge bg-subtle text-accent border-color px-3 py-1.5 rounded-pill small">
+                <i data-lucide="check-circle" style="width: 13px; height: 13px;" class="me-1 text-primary"></i>
+                Following <strong>{{ followed_names|length }}</strong> companies
+            </span>
+        </div>
+    </div>
+
+    <!-- Companies Grid -->
+    <div class="row g-4" id="companiesGrid">
+        {% if companies %}
+            {% for comp in companies %}
+            <div class="col-md-6 col-lg-4 d-flex">
+                <div class="card card-custom h-100 w-100 p-4 d-flex flex-column hover-shadow transition">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <div class="d-flex align-items-center gap-2.5">
+                            <div class="rounded-3 bg-subtle border border-color p-2 d-flex align-items-center justify-content-center" style="width: 42px; height: 42px;">
+                                <i data-lucide="building" class="text-primary" style="width: 22px; height: 22px;"></i>
+                            </div>
+                            <div>
+                                <h5 class="fw-bold mb-0 text-main">{{ comp.name }}</h5>
+                                <span class="badge bg-subtle text-muted border-color" style="font-size: 0.72rem;">
+                                    {{ comp.industry }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <p class="text-muted small mb-3 flex-grow-1 line-clamp-3">
+                        {{ comp.description or "Global technology and engineering organization." }}
+                    </p>
+
+                    <div class="pt-3 border-top border-color d-flex justify-content-between align-items-center mt-auto gap-2">
+                        {% if comp.website %}
+                        <a href="{{ comp.website }}" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-subtle text-muted d-inline-flex align-items-center gap-1" title="Visit Careers Page">
+                            Careers <i data-lucide="external-link" style="width: 13px; height: 13px;"></i>
+                        </a>
+                        {% else %}
+                        <span></span>
+                        {% endif %}
+
+                        {% if g.current_user %}
+                        <button type="button"
+                                class="btn btn-sm follow-btn d-inline-flex align-items-center gap-1.5 {% if comp.is_following %}btn-outline-danger{% else %}btn-primary-custom{% endif %}"
+                                data-company="{{ comp.name }}"
+                                data-following="{{ 'true' if comp.is_following else 'false' }}"
+                                onclick="toggleFollowCompany(this)">
+                            {% if comp.is_following %}
+                                <i data-lucide="user-minus" style="width: 14px; height: 14px;"></i> Following
+                            {% else %}
+                                <i data-lucide="user-plus" style="width: 14px; height: 14px;"></i> Follow
+                            {% endif %}
+                        </button>
+                        {% else %}
+                        <a href="{{ url_for('login') }}" class="btn btn-sm btn-outline-custom">Log in to Follow</a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="col-12">
+                <div class="card card-custom p-5 text-center text-muted">
+                    <i data-lucide="building" style="width: 48px; height: 48px;" class="mx-auto mb-3 opacity-50"></i>
+                    <h5>No Companies Found</h5>
+                    <p class="small mb-3">No organizations matched "{{ search_query }}". Try a broader keyword.</p>
+                    <a href="{{ url_for('companies_page') }}" class="btn btn-outline-custom btn-sm mx-auto">Show All Companies</a>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function toggleFollowCompany(btn) {
+    const companyName = btn.getAttribute('data-company');
+    const isFollowing = btn.getAttribute('data-following') === 'true';
+    const endpoint = isFollowing 
+        ? `/api/companies/unfollow/${encodeURIComponent(companyName)}`
+        : `/api/companies/follow/${encodeURIComponent(companyName)}`;
+
+    btn.disabled = true;
+
+    try {
+        const res = await fetch(endpoint, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCsrfToken(),
+                'X-CSRF-Token': getCsrfToken()
+            }
+        });
+        const data = await res.json();
+
+        if (res.ok && data.success) {
+            const nextFollowing = !isFollowing;
+            btn.setAttribute('data-following', nextFollowing ? 'true' : 'false');
+
+            if (nextFollowing) {
+                btn.className = 'btn btn-sm follow-btn d-inline-flex align-items-center gap-1.5 btn-outline-danger';
+                btn.innerHTML = '<i data-lucide="user-minus" style="width: 14px; height: 14px;"></i> Following';
+            } else {
+                btn.className = 'btn btn-sm follow-btn d-inline-flex align-items-center gap-1.5 btn-primary-custom';
+                btn.innerHTML = '<i data-lucide="user-plus" style="width: 14px; height: 14px;"></i> Follow';
+            }
+            if (window.lucide) lucide.createIcons();
+        } else {
+            alert(data.error || 'Failed to update company following status.');
+        }
+    } catch (err) {
+        console.error('Follow error:', err);
+        alert('Network error while updating following status.');
+    } finally {
+        btn.disabled = false;
+    }
+}
+</script>
+{% endblock %}

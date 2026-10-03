@@ -1,0 +1,851 @@
+/* ==========================================================================
+   JARVIS VOICE AI - IRON MAN HUD THEME
+   Vibrant Arc Reactor Cyan (#00f0ff), Deep Cyber Void, No Purple
+   ========================================================================== */
+
+:root {
+    --bg-color: #03070d;
+    --bg-gradient: radial-gradient(circle at 50% 45%, #081a26 0%, #03080e 60%, #010306 100%);
+    
+    /* Arc Reactor Cyan / Blue Palette */
+    --hud-cyan: #00f0ff;
+    --hud-cyan-bright: #70f7ff;
+    --hud-cyan-dim: rgba(0, 240, 255, 0.35);
+    --hud-cyan-glow: rgba(0, 240, 255, 0.7);
+    --hud-cyan-faint: rgba(0, 240, 255, 0.08);
+    
+    /* Telemetry & Secondary Colors */
+    --hud-amber: #ffaa00;
+    --hud-red: #ff3344;
+    --hud-green: #00ffaa;
+    
+    /* Text */
+    --text-primary: #e6f8ff;
+    --text-muted: #7ca5b8;
+    --text-dim: #3d6070;
+
+    /* Fonts */
+    --font-heading: 'Orbitron', -apple-system, sans-serif;
+    --font-ui: 'Rajdhani', -apple-system, sans-serif;
+    --font-mono: 'Share Tech Mono', monospace;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html, body {
+    width: 100%;
+    height: 100%;
+    background-color: var(--bg-color);
+    background-image: var(--bg-gradient);
+    color: var(--text-primary);
+    font-family: var(--font-ui);
+    overflow: hidden;
+    user-select: none;
+    -webkit-font-smoothing: antialiased;
+}
+
+/* Scanline Overlay Effect for HUD Atmosphere */
+body::before {
+    content: " ";
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: linear-gradient(
+        rgba(18, 16, 16, 0) 50%, 
+        rgba(0, 240, 255, 0.02) 50%
+    );
+    background-size: 100% 4px;
+    z-index: 1;
+    pointer-events: none;
+    opacity: 0.8;
+}
+
+/* Subtle Vignette & Grid */
+body::after {
+    content: "";
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(circle at center, transparent 40%, rgba(1, 4, 8, 0.95) 100%);
+    pointer-events: none;
+    z-index: 1;
+}
+
+.hud-container {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    z-index: 2;
+    padding: 1.2rem 1.8rem;
+}
+
+/* ==========================================================================
+   HUD HEADER
+   ========================================================================== */
+.hud-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--hud-cyan-dim);
+    padding-bottom: 0.75rem;
+    position: relative;
+}
+
+.hud-header::after {
+    content: "";
+    position: absolute;
+    bottom: -1px;
+    left: 40%;
+    width: 20%;
+    height: 2px;
+    background: var(--hud-cyan);
+    box-shadow: 0 0 10px var(--hud-cyan);
+}
+
+.hud-telemetry {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+
+.telemetry-badge {
+    color: var(--hud-cyan);
+    background: var(--hud-cyan-faint);
+    border: 1px solid var(--hud-cyan-dim);
+    padding: 0.15rem 0.5rem;
+    letter-spacing: 1px;
+    font-size: 0.75rem;
+}
+
+.telemetry-coords {
+    color: var(--text-dim);
+}
+
+.hud-title {
+    text-align: center;
+}
+
+.brand-text {
+    font-family: var(--font-heading);
+    font-size: 1.5rem;
+    font-weight: 800;
+    letter-spacing: 5px;
+    color: var(--hud-cyan-bright);
+    text-shadow: 0 0 12px var(--hud-cyan-glow), 0 0 25px rgba(0, 240, 255, 0.4);
+    display: block;
+}
+
+.brand-sub {
+    font-family: var(--font-mono);
+    font-size: 0.65rem;
+    letter-spacing: 3px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+}
+
+.status-indicator {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+}
+
+.status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: var(--hud-cyan);
+    box-shadow: 0 0 8px var(--hud-cyan);
+    transition: all 0.3s ease;
+}
+
+.status-dot.active {
+    background-color: var(--hud-green);
+    box-shadow: 0 0 10px var(--hud-green);
+}
+
+.status-dot.warn {
+    background-color: var(--hud-amber);
+    box-shadow: 0 0 10px var(--hud-amber);
+}
+
+.status-dot.error {
+    background-color: var(--hud-red);
+    box-shadow: 0 0 10px var(--hud-red);
+}
+
+.status-text {
+    letter-spacing: 1px;
+}
+
+/* ==========================================================================
+   HUD MAIN: CORE & VISUALIZER
+   ========================================================================== */
+.hud-main {
+    position: relative;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+
+/* Decorative Outer Rings */
+.hud-backdrop-ring {
+    position: absolute;
+    border-radius: 50%;
+    border: 1px dashed var(--hud-cyan-dim);
+    pointer-events: none;
+    transform: translate(-50%, -50%);
+    top: 50%;
+    left: 50%;
+}
+
+.hud-backdrop-ring.outer-ring {
+    width: 650px;
+    height: 650px;
+    border-color: rgba(0, 240, 255, 0.08);
+    animation: rotateSlow 120s linear infinite;
+}
+
+.hud-backdrop-ring.mid-ring {
+    width: 480px;
+    height: 480px;
+    border: 1px solid rgba(0, 240, 255, 0.12);
+    border-top: 2px solid rgba(0, 240, 255, 0.4);
+    border-bottom: 2px solid rgba(0, 240, 255, 0.4);
+    animation: rotateCounter 80s linear infinite;
+}
+
+@keyframes rotateSlow {
+    from { transform: translate(-50%, -50%) rotate(0deg); }
+    to { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+@keyframes rotateCounter {
+    from { transform: translate(-50%, -50%) rotate(360deg); }
+    to { transform: translate(-50%, -50%) rotate(0deg); }
+}
+
+/* HUD Target Brackets */
+.hud-target-brackets {
+    position: absolute;
+    width: 540px;
+    height: 540px;
+    pointer-events: none;
+    border: 1px solid transparent;
+}
+
+.hud-target-brackets::before, .hud-target-brackets::after {
+    content: "";
+    position: absolute;
+    width: 24px;
+    height: 24px;
+    border-color: var(--hud-cyan);
+    border-style: solid;
+    pointer-events: none;
+}
+
+.hud-target-brackets::before {
+    top: 0;
+    left: 0;
+    border-width: 2px 0 0 2px;
+}
+
+.hud-target-brackets::after {
+    bottom: 0;
+    right: 0;
+    border-width: 0 2px 2px 0;
+}
+
+/* Core Stage (Canvas Holder) */
+.core-stage {
+    position: relative;
+    width: 420px;
+    height: 420px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    border-radius: 50%;
+    transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.core-stage:hover {
+    transform: scale(1.02);
+}
+
+#jarvis-canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+}
+
+.core-readout {
+    position: relative;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+}
+
+.core-ring-pulse {
+    position: absolute;
+    width: 90px;
+    height: 90px;
+    border-radius: 50%;
+    border: 1px solid var(--hud-cyan);
+    box-shadow: 0 0 15px var(--hud-cyan-dim);
+    animation: corePulse 3s ease-in-out infinite;
+}
+
+@keyframes corePulse {
+    0%, 100% {
+        transform: scale(0.9);
+        opacity: 0.4;
+    }
+    50% {
+        transform: scale(1.15);
+        opacity: 0.9;
+        box-shadow: 0 0 25px var(--hud-cyan);
+    }
+}
+
+.core-state-badge {
+    font-family: var(--font-heading);
+    font-size: 0.85rem;
+    font-weight: 700;
+    letter-spacing: 3px;
+    color: var(--hud-cyan-bright);
+    text-shadow: 0 0 8px var(--hud-cyan-glow);
+    margin-bottom: 2px;
+    transition: all 0.3s ease;
+}
+
+.core-frequency-readout {
+    font-family: var(--font-mono);
+    font-size: 0.65rem;
+    color: var(--text-dim);
+    letter-spacing: 1px;
+}
+
+/* State Status Panel */
+.state-indicator-panel {
+    display: flex;
+    align-items: center;
+    gap: 1.2rem;
+    margin-top: 1rem;
+    z-index: 10;
+}
+
+.state-pulse-line {
+    width: 50px;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--hud-cyan-dim));
+}
+
+.state-pulse-line:last-child {
+    background: linear-gradient(90deg, var(--hud-cyan-dim), transparent);
+}
+
+.state-label-container {
+    text-align: center;
+}
+
+.state-glitch-text {
+    font-family: var(--font-heading);
+    font-size: 1.25rem;
+    font-weight: 900;
+    letter-spacing: 4px;
+    color: var(--hud-cyan);
+    text-shadow: 0 0 10px var(--hud-cyan-glow);
+    display: block;
+    transition: all 0.3s ease;
+}
+
+.state-sub-text {
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    letter-spacing: 2px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    display: block;
+    margin-top: 2px;
+}
+
+/* Audio Waveform Bars */
+.waveform-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    height: 24px;
+    margin-top: 0.8rem;
+    opacity: 0.4;
+    transition: opacity 0.3s ease;
+}
+
+.waveform-container.active {
+    opacity: 1;
+}
+
+.waveform-bar {
+    width: 3px;
+    height: 6px;
+    background: var(--hud-cyan);
+    border-radius: 2px;
+    box-shadow: 0 0 5px var(--hud-cyan-glow);
+    transition: height 0.1s ease;
+}
+
+/* HUD Controls */
+.hud-controls {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.6rem;
+    margin-top: 1.2rem;
+    z-index: 10;
+}
+
+.control-buttons-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1.25rem;
+}
+
+.mic-button {
+    position: relative;
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: rgba(3, 14, 22, 0.8);
+    border: 1.5px solid var(--hud-cyan-dim);
+    cursor: pointer;
+    outline: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    box-shadow: 0 0 15px rgba(0, 240, 255, 0.15);
+}
+
+.mic-button:hover {
+    border-color: var(--hud-cyan);
+    transform: scale(1.08);
+    box-shadow: 0 0 25px rgba(0, 240, 255, 0.4);
+}
+
+.mic-button.listening {
+    border-color: var(--hud-green);
+    background: rgba(0, 255, 170, 0.1);
+    box-shadow: 0 0 30px rgba(0, 255, 170, 0.6);
+    animation: micActivePulse 1.5s infinite;
+}
+
+@keyframes micActivePulse {
+    0%, 100% {
+        transform: scale(1);
+        box-shadow: 0 0 20px rgba(0, 255, 170, 0.4);
+    }
+    50% {
+        transform: scale(1.08);
+        box-shadow: 0 0 35px rgba(0, 255, 170, 0.8);
+    }
+}
+
+.mic-icon {
+    width: 26px;
+    height: 26px;
+    color: var(--hud-cyan);
+    transition: color 0.3s ease;
+}
+
+.mic-button.listening .mic-icon {
+    color: var(--hud-green);
+}
+
+/* Pause / Resume Button */
+.hud-action-button.pause-btn {
+    position: relative;
+    height: 48px;
+    padding: 0 1.2rem;
+    border-radius: 24px;
+    background: rgba(3, 14, 22, 0.85);
+    border: 1.5px solid var(--hud-cyan-dim);
+    cursor: pointer;
+    outline: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    box-shadow: 0 0 12px rgba(0, 240, 255, 0.15);
+}
+
+.hud-action-button.pause-btn:disabled {
+    opacity: 0.25;
+    cursor: not-allowed;
+    border-color: rgba(0, 240, 255, 0.15);
+    box-shadow: none;
+    pointer-events: none;
+}
+
+.hud-action-button.pause-btn:not(:disabled):hover {
+    border-color: var(--hud-cyan);
+    transform: scale(1.05);
+    box-shadow: 0 0 20px rgba(0, 240, 255, 0.4);
+}
+
+.action-btn-inner {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-family: var(--font-heading);
+    font-size: 0.75rem;
+    letter-spacing: 2px;
+    color: var(--hud-cyan);
+    transition: color 0.3s ease;
+}
+
+.action-icon {
+    width: 16px;
+    height: 16px;
+    fill: currentColor;
+}
+
+/* State-specific styling for Pause button */
+.hud-action-button.pause-btn.speaking {
+    border-color: var(--hud-cyan-bright);
+    box-shadow: 0 0 18px rgba(0, 240, 255, 0.5);
+    animation: pausePulse 2s infinite ease-in-out;
+}
+
+@keyframes pausePulse {
+    0%, 100% { box-shadow: 0 0 12px rgba(0, 240, 255, 0.3); }
+    50% { box-shadow: 0 0 22px rgba(0, 240, 255, 0.6); }
+}
+
+.hud-action-button.pause-btn.is-paused {
+    border-color: var(--hud-amber);
+    box-shadow: 0 0 20px rgba(255, 170, 0, 0.5);
+    animation: amberPulse 1.8s infinite ease-in-out;
+}
+
+.hud-action-button.pause-btn.is-paused .action-btn-inner {
+    color: var(--hud-amber);
+}
+
+@keyframes amberPulse {
+    0%, 100% { box-shadow: 0 0 12px rgba(255, 170, 0, 0.3); }
+    50% { box-shadow: 0 0 24px rgba(255, 170, 0, 0.7); }
+}
+
+/* PAUSED State visuals for Core & HUD Readouts */
+.core-state-badge.state-paused,
+.state-glitch-text.state-paused {
+    color: var(--hud-amber) !important;
+    text-shadow: 0 0 12px rgba(255, 170, 0, 0.7) !important;
+}
+
+.mic-caption {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    letter-spacing: 2px;
+    color: var(--text-muted);
+}
+
+/* ==========================================================================
+   HUD FOOTER: TRANSCRIPT FEED & INPUT DRAWER
+   ========================================================================== */
+.hud-footer {
+    width: 100%;
+    max-width: 850px;
+    margin: 0 auto;
+    position: relative;
+    z-index: 10;
+}
+
+.transcript-drawer {
+    background: rgba(4, 12, 19, 0.75);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--hud-cyan-dim);
+    box-shadow: 0 0 20px rgba(0, 240, 255, 0.08), inset 0 0 15px rgba(0, 240, 255, 0.03);
+    border-radius: 8px;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.transcript-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 1rem;
+    background: rgba(0, 240, 255, 0.05);
+    border-bottom: 1px solid rgba(0, 240, 255, 0.15);
+}
+
+.terminal-title {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    letter-spacing: 2px;
+    color: var(--hud-cyan);
+}
+
+.terminal-actions {
+    display: flex;
+    gap: 0.6rem;
+}
+
+.hud-btn-ghost {
+    background: transparent;
+    border: 1px solid var(--hud-cyan-dim);
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+    font-size: 0.65rem;
+    letter-spacing: 1px;
+    padding: 0.15rem 0.5rem;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.hud-btn-ghost:hover {
+    border-color: var(--hud-cyan);
+    color: var(--hud-cyan-bright);
+    background: var(--hud-cyan-faint);
+}
+
+.transcript-feed {
+    height: 180px;
+    max-height: 320px;
+    overflow-y: auto;
+    padding: 0.8rem 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+    scroll-behavior: smooth;
+}
+
+/* Custom Scrollbar for Transcript */
+.transcript-feed::-webkit-scrollbar {
+    width: 5px;
+}
+.transcript-feed::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.3);
+}
+.transcript-feed::-webkit-scrollbar-thumb {
+    background: var(--hud-cyan-dim);
+    border-radius: 3px;
+}
+.transcript-feed::-webkit-scrollbar-thumb:hover {
+    background: var(--hud-cyan);
+}
+
+.message-entry {
+    display: flex;
+    flex-direction: column;
+    animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.message-meta {
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    letter-spacing: 1.5px;
+    margin-bottom: 3px;
+}
+
+.message-entry.user .message-meta {
+    color: var(--hud-amber);
+}
+
+.message-entry.assistant .message-meta {
+    color: var(--hud-cyan);
+}
+
+.message-text {
+    font-size: 0.94rem;
+    line-height: 1.5;
+    color: var(--text-primary);
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.message-entry.user .message-text {
+    color: #ffd899;
+}
+
+/* Text fallback form */
+.fallback-input-bar {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.4rem 0.8rem;
+    background: rgba(2, 7, 12, 0.8);
+    border-top: 1px solid rgba(0, 240, 255, 0.12);
+}
+
+.input-prompt {
+    font-family: var(--font-mono);
+    color: var(--hud-cyan);
+    font-weight: bold;
+}
+
+#text-input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--text-primary);
+    font-family: var(--font-ui);
+    font-size: 0.9rem;
+    letter-spacing: 0.5px;
+}
+
+#text-input::placeholder {
+    color: var(--text-dim);
+    font-style: italic;
+    font-size: 0.82rem;
+}
+
+.hud-send-btn {
+    background: var(--hud-cyan-faint);
+    border: 1px solid var(--hud-cyan-dim);
+    color: var(--hud-cyan);
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    letter-spacing: 1.5px;
+    padding: 0.25rem 0.75rem;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.hud-send-btn:hover {
+    background: var(--hud-cyan);
+    color: #000;
+    box-shadow: 0 0 10px var(--hud-cyan);
+}
+
+/* ==========================================================================
+   HUD NOTIFICATION TOAST
+   ========================================================================== */
+.hud-toast {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: rgba(3, 14, 23, 0.9);
+    border: 1px solid var(--hud-cyan);
+    box-shadow: 0 0 15px rgba(0, 240, 255, 0.25);
+    border-radius: 4px;
+    padding: 0.6rem 1.2rem;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    letter-spacing: 1px;
+    color: var(--text-primary);
+    z-index: 1000;
+    transform: translateY(-50px);
+    opacity: 0;
+    pointer-events: none;
+    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s ease;
+}
+
+.hud-toast.visible {
+    transform: translateY(0);
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.hud-toast.toast-error {
+    border-color: var(--hud-red);
+    box-shadow: 0 0 15px rgba(255, 51, 68, 0.35);
+}
+
+.hud-toast.toast-error .toast-indicator {
+    background-color: var(--hud-red);
+    box-shadow: 0 0 8px var(--hud-red);
+}
+
+.toast-indicator {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background-color: var(--hud-cyan);
+    box-shadow: 0 0 8px var(--hud-cyan);
+}
+
+/* ==========================================================================
+   RESPONSIVE DESIGN (MOBILE & TABLET)
+   ========================================================================== */
+@media (max-width: 768px) {
+    .hud-container {
+        padding: 0.8rem 1rem;
+    }
+
+    .telemetry-coords, .telemetry-label {
+        display: none;
+    }
+
+    .brand-text {
+        font-size: 1.2rem;
+        letter-spacing: 3px;
+    }
+
+    .hud-backdrop-ring.outer-ring {
+        width: 340px;
+        height: 340px;
+    }
+
+    .hud-backdrop-ring.mid-ring {
+        width: 290px;
+        height: 290px;
+    }
+
+    .hud-target-brackets {
+        width: 310px;
+        height: 310px;
+    }
+
+    .core-stage {
+        width: 280px;
+        height: 280px;
+    }
+
+    .state-glitch-text {
+        font-size: 1rem;
+        letter-spacing: 2px;
+    }
+
+    .transcript-feed {
+        height: 95px;
+    }
+}

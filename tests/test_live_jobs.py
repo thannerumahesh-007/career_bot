@@ -143,7 +143,7 @@ class TestLiveJobsAndCombinedProvider(unittest.TestCase):
         res_all = self.client.get('/jobs?tab=all')
         self.assertEqual(res_all.status_code, 200)
         self.assertIn(b"Live Internet Jobs", res_all.data)
-        self.assertIn(b"Existing Database Jobs", res_all.data)
+        self.assertNotIn(b"Existing Database Jobs", res_all.data)
 
         # Test tab=live
         res_live = self.client.get('/jobs?tab=live')

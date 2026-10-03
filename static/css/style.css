@@ -5,48 +5,48 @@
    ========================================================================== */
 
 :root {
-    /* Brand Tokens */
-    --carbon-black: #18181B;
-    --azure-blue: #3B82F6;
+    /* Brand Design Tokens */
+    --carbon-black: #18181B;        /* Headings, primary text, dark nav */
+    --azure-blue: #3B82F6;          /* Primary buttons, active states, AI actions, links */
     --azure-blue-hover: #2563EB;
     --azure-blue-light: #EFF6FF;
     --azure-blue-glow: rgba(59, 130, 246, 0.25);
-    --slate-grey: #64748B;
+    --slate-grey: #64748B;          /* Metadata, secondary text, borders, placeholders */
     --slate-grey-light: #94A3B8;
     --slate-grey-border: #E4E4E7;
-    --coral: #F43F5E;
+    --coral: #F43F5E;               /* Missing skills, warnings, low-match indicators, alerts */
     --coral-bg: rgba(244, 63, 94, 0.12);
-    --white: #FFFFFF;
-    --soft-slate: #F4F4F5;
+    --white: #FFFFFF;               /* Cards, job cards, news cards, chat input surfaces */
+    --soft-slate: #F4F4F5;          /* Light-theme page background */
 
-    /* Light Theme (Default clean surfaces) */
-    --bg-main: #F4F4F5;          /* Soft Slate */
-    --bg-surface: #FFFFFF;       /* White */
-    --bg-card: #FFFFFF;          /* White */
-    --bg-subtle: #F4F4F5;        /* Soft Slate */
-    --bg-nav: #18181B;           /* Carbon Black navigation structure */
+    /* Light Theme (Default) */
+    --bg-main: #F4F4F5;             /* Soft Slate page background */
+    --bg-surface: #FFFFFF;          /* White surface */
+    --bg-card: #FFFFFF;             /* White cards */
+    --bg-subtle: #F4F4F5;           /* Soft Slate inset */
+    --bg-nav: #18181B;              /* Carbon Black navigation structure */
     --nav-text: #F4F4F5;
     --nav-muted: #94A3B8;
     
-    --primary: #3B82F6;          /* Azure Blue */
+    --primary: #3B82F6;             /* Azure Blue */
     --primary-hover: #2563EB;
     --primary-light: #EFF6FF;
     --primary-gradient: linear-gradient(135deg, #3B82F6 0%, #2563EB 100%);
     
     --accent: #3B82F6;
-    --slate: #64748B;            /* Slate Grey */
+    --slate: #64748B;               /* Slate Grey */
     
-    --text-main: #18181B;        /* Carbon Black */
-    --text-muted: #64748B;       /* Slate Grey */
+    --text-main: #18181B;           /* Carbon Black */
+    --text-muted: #64748B;          /* Slate Grey */
     --text-subtle: #94A3B8;
-    --border-color: #E4E4E7;     /* Slate Grey border */
+    --border-color: #E4E4E7;        /* Slate Grey border */
     --border-glow: rgba(59, 130, 246, 0.35);
     
-    /* Functional Alert Colors */
-    --danger: #F43F5E;           /* Coral: warnings, missing skills, low match */
+    /* Functional Alert Colors (Coral strictly for warnings/missing/alerts) */
+    --danger: #F43F5E;              /* Coral */
     --danger-bg: rgba(244, 63, 94, 0.12);
-    --warning: #F59E0B;
-    --warning-bg: rgba(245, 158, 11, 0.12);
+    --warning: #F43F5E;             /* Coral for warnings */
+    --warning-bg: rgba(244, 63, 94, 0.12);
     --success: #10B981;
     --success-bg: rgba(16, 185, 129, 0.12);
 
@@ -64,32 +64,32 @@
 
 /* Dark Theme Overrides */
 [data-theme="dark"] {
-    --bg-main: #18181B;          /* Carbon Black page background */
-    --bg-surface: #27272A;       /* High-contrast Carbon Card/Surface */
-    --bg-card: #27272A;          /* High-contrast Carbon Card */
-    --bg-subtle: #1F1F23;        /* Dark Subtle Inset */
-    --bg-nav: #18181B;           /* Carbon Black */
+    --bg-main: #18181B;             /* Carbon Black page background */
+    --bg-surface: #27272A;          /* High-contrast Carbon Card/Surface */
+    --bg-card: #27272A;             /* High-contrast Carbon Card */
+    --bg-subtle: #1F1F23;           /* Dark Subtle Inset */
+    --bg-nav: #18181B;              /* Carbon Black */
     --nav-text: #F4F4F5;
     --nav-muted: #94A3B8;
     
-    --primary: #3B82F6;          /* Azure Blue */
+    --primary: #3B82F6;             /* Azure Blue */
     --primary-hover: #60A5FA;
     --primary-light: rgba(59, 130, 246, 0.18);
     --primary-gradient: linear-gradient(135deg, #3B82F6 0%, #1D4ED8 100%);
     
     --accent: #3B82F6;
-    --slate: #94A3B8;            /* Lighter Slate for dark readability */
+    --slate: #94A3B8;               /* Lighter Slate for dark readability */
     
-    --text-main: #F4F4F5;        /* Soft Slate text */
-    --text-muted: #A1A1AA;       /* Slate Grey readable */
+    --text-main: #F4F4F5;           /* Soft Slate readable text */
+    --text-muted: #A1A1AA;          /* Slate Grey readable (4.8:1 contrast) */
     --text-subtle: #71717A;
-    --border-color: #3F3F46;     /* Slate dark border */
+    --border-color: #3F3F46;        /* Slate dark border */
     --border-glow: rgba(59, 130, 246, 0.4);
     
-    --danger: #F43F5E;           /* Coral */
+    --danger: #F43F5E;              /* Coral */
     --danger-bg: rgba(244, 63, 94, 0.22);
-    --warning: #F59E0B;
-    --warning-bg: rgba(245, 158, 11, 0.2);
+    --warning: #F43F5E;             /* Coral */
+    --warning-bg: rgba(244, 63, 94, 0.22);
     --success: #10B981;
     --success-bg: rgba(16, 185, 129, 0.2);
 
@@ -98,7 +98,9 @@
     --shadow-lg: 0 10px 28px rgba(0, 0, 0, 0.6);
 }
 
-/* Base Document Typography & Color */
+/* ==========================================================================
+   Base Typography & Color Resets
+   ========================================================================== */
 body {
     font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     background-color: var(--bg-main);
@@ -116,13 +118,57 @@ p, .text-muted {
 }
 
 a {
-    color: var(--primary);
+    color: var(--azure-blue);
     text-decoration: none;
     transition: var(--transition);
 }
 
 a:hover {
-    color: var(--primary-hover);
+    color: var(--azure-blue-hover);
+}
+
+/* White Text Elements (Ensures headings inside dark cards remain crisp white) */
+.text-white, 
+.text-white h1, .text-white h2, .text-white h3, .text-white h4, .text-white h5, .text-white h6,
+.text-white p, .text-white span, .text-white div, .text-white small {
+    color: #FFFFFF !important;
+}
+
+.text-white-50 {
+    color: rgba(255, 255, 255, 0.72) !important;
+}
+
+/* ==========================================================================
+   Design System Utility Classes
+   ========================================================================== */
+.bg-main { background-color: var(--bg-main) !important; }
+.bg-card { background-color: var(--bg-card) !important; }
+.bg-subtle { background-color: var(--bg-subtle) !important; }
+.bg-surface { background-color: var(--bg-surface) !important; }
+.bg-primary-light { background-color: var(--primary-light) !important; }
+.bg-coral-bg, .bg-danger-bg { background-color: var(--danger-bg) !important; }
+.bg-warning-bg { background-color: var(--warning-bg) !important; }
+.bg-success-bg { background-color: var(--success-bg) !important; }
+
+.text-primary, .text-accent { color: var(--azure-blue) !important; }
+.text-coral, .text-danger { color: var(--coral) !important; }
+.text-slate { color: var(--slate-grey) !important; }
+
+.border-color { border-color: var(--border-color) !important; }
+.border-glow { border-color: var(--border-glow) !important; }
+
+.hover-primary:hover {
+    color: var(--azure-blue) !important;
+}
+
+.hover-shadow {
+    transition: var(--transition);
+}
+
+.hover-shadow:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md) !important;
+    border-color: var(--border-glow) !important;
 }
 
 /* ==========================================================================
@@ -169,6 +215,18 @@ a:hover {
 .navbar-custom .nav-link.active {
     color: #FFFFFF !important;
     background-color: var(--azure-blue);
+}
+
+/* Navbar Buttons (High contrast on Carbon Black header in both themes) */
+.navbar-custom .btn-outline-custom {
+    color: var(--nav-text) !important;
+    border-color: rgba(255, 255, 255, 0.22) !important;
+}
+
+.navbar-custom .btn-outline-custom:hover {
+    color: #FFFFFF !important;
+    border-color: var(--azure-blue) !important;
+    background-color: rgba(59, 130, 246, 0.18) !important;
 }
 
 /* ==========================================================================
@@ -235,6 +293,11 @@ a:hover {
     box-shadow: 0 4px 12px rgba(59, 130, 246, 0.35);
 }
 
+.btn-primary-custom:active, .btn-primary:active {
+    background: #1D4ED8 !important;
+    border-color: #1D4ED8 !important;
+}
+
 .btn-outline-custom {
     background-color: transparent !important;
     border: 1px solid var(--border-color) !important;
@@ -255,48 +318,173 @@ a:hover {
     background-color: var(--primary-light) !important;
 }
 
-/* ==========================================================================
-   Forms & Controls
-   ========================================================================== */
-.form-control, .form-select, .input-group-text {
+/* Light Pill Button (Hero Banners) */
+.btn-light {
+    background-color: #FFFFFF !important;
+    color: var(--azure-blue) !important;
+    border: 1px solid #FFFFFF !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+}
+
+.btn-light:hover {
+    background-color: #F4F4F5 !important;
+    color: var(--azure-blue-hover) !important;
+    border-color: #F4F4F5 !important;
+}
+
+/* Coral Danger / Warning Action Buttons */
+.btn-danger {
+    background-color: var(--coral) !important;
+    border-color: var(--coral) !important;
+    color: #FFFFFF !important;
+    font-weight: 600;
+}
+
+.btn-danger:hover {
+    background-color: #E11D48 !important;
+    border-color: #E11D48 !important;
+}
+
+.btn-outline-danger {
+    background-color: transparent !important;
+    border-color: var(--coral) !important;
+    color: var(--coral) !important;
+}
+
+.btn-outline-danger:hover {
+    background-color: var(--coral) !important;
+    border-color: var(--coral) !important;
+    color: #FFFFFF !important;
+}
+
+.btn-subtle {
     background-color: var(--bg-subtle) !important;
+    border: 1px solid var(--border-color) !important;
+}
+
+.btn-subtle:hover {
+    border-color: var(--azure-blue) !important;
+}
+
+/* ==========================================================================
+   Forms & Controls (White in Light Mode, Carbon in Dark Mode)
+   ========================================================================== */
+.form-control, .form-select {
+    background-color: var(--bg-card) !important;
     color: var(--text-main) !important;
     border: 1px solid var(--border-color) !important;
     border-radius: var(--radius-sm);
     transition: var(--transition);
 }
 
+.input-group-text {
+    background-color: var(--bg-subtle) !important;
+    color: var(--text-muted) !important;
+    border: 1px solid var(--border-color) !important;
+    border-radius: var(--radius-sm);
+}
+
 .form-control:focus, .form-select:focus {
-    background-color: var(--bg-surface) !important;
+    background-color: var(--bg-card) !important;
     color: var(--text-main) !important;
     border-color: var(--azure-blue) !important;
     box-shadow: 0 0 0 3px var(--azure-blue-glow) !important;
 }
 
 .form-control::placeholder {
-    color: var(--slate-grey) !important;
+    color: var(--text-muted) !important;
     opacity: 0.85;
 }
 
 select.form-select option {
-    background-color: var(--bg-surface) !important;
+    background-color: var(--bg-card) !important;
     color: var(--text-main) !important;
 }
 
+/* Form Check / Switches */
+.form-check-input {
+    background-color: var(--bg-card);
+    border-color: var(--border-color);
+}
+
+.form-check-input:checked {
+    background-color: var(--azure-blue) !important;
+    border-color: var(--azure-blue) !important;
+}
+
+.form-switch .form-check-input:focus {
+    box-shadow: 0 0 0 3px var(--azure-blue-glow);
+    border-color: var(--azure-blue);
+}
+
+/* Dropdowns */
 .dropdown-menu {
-    background-color: var(--bg-surface) !important;
+    background-color: var(--bg-card) !important;
     border: 1px solid var(--border-color) !important;
     box-shadow: var(--shadow-lg);
     border-radius: var(--radius-md);
+    padding: 0.5rem;
+}
+
+.dropdown-header {
+    color: var(--text-muted) !important;
 }
 
 .dropdown-item {
     color: var(--text-main) !important;
+    border-radius: var(--radius-sm);
+    padding: 0.5rem 0.85rem;
     transition: var(--transition);
 }
 
-.dropdown-item:hover {
+.dropdown-item:hover, .dropdown-item:focus {
     background-color: var(--primary-light) !important;
+    color: var(--azure-blue) !important;
+}
+
+.dropdown-divider {
+    border-top: 1px solid var(--border-color) !important;
+    opacity: 1;
+}
+
+/* ==========================================================================
+   Modals
+   ========================================================================== */
+.modal-content {
+    background-color: var(--bg-card) !important;
+    border: 1px solid var(--border-color) !important;
+    border-radius: var(--radius-lg);
+    color: var(--text-main) !important;
+    box-shadow: var(--shadow-lg);
+}
+
+[data-theme="dark"] .btn-close {
+    filter: invert(1) grayscale(100%);
+}
+
+/* ==========================================================================
+   Alerts & Notifications (Coral for warnings and danger)
+   ========================================================================== */
+.alert {
+    border-radius: var(--radius-md);
+    border: 1px solid transparent;
+}
+
+.alert-danger, .alert-warning {
+    background-color: var(--danger-bg) !important;
+    border-color: rgba(244, 63, 94, 0.35) !important;
+    color: var(--danger) !important;
+}
+
+.alert-success {
+    background-color: var(--success-bg) !important;
+    border-color: rgba(16, 185, 129, 0.35) !important;
+    color: var(--success) !important;
+}
+
+.alert-info, .alert-primary {
+    background-color: var(--primary-light) !important;
+    border-color: rgba(59, 130, 246, 0.35) !important;
     color: var(--azure-blue) !important;
 }
 
@@ -317,6 +505,7 @@ select.form-select option {
     margin: 0.2rem;
 }
 
+/* Coral: missing skills & critical gaps */
 .skill-chip.missing {
     background-color: var(--coral-bg);
     border-color: rgba(244, 63, 94, 0.35);
@@ -347,11 +536,12 @@ select.form-select option {
 }
 
 .match-moderate {
-    background-color: var(--warning-bg);
-    border-color: rgba(245, 158, 11, 0.4);
-    color: var(--warning);
+    background-color: var(--primary-light);
+    border-color: rgba(59, 130, 246, 0.4);
+    color: var(--azure-blue);
 }
 
+/* Coral: low-match indicator */
 .match-limited {
     background-color: var(--coral-bg);
     border-color: rgba(244, 63, 94, 0.4);
@@ -371,11 +561,32 @@ select.form-select option {
     font-weight: 600;
 }
 
+.badge.bg-primary {
+    background-color: var(--azure-blue) !important;
+    color: #FFFFFF !important;
+}
+
+.badge.bg-secondary {
+    background-color: var(--slate-grey) !important;
+    color: #FFFFFF !important;
+}
+
+.badge.bg-success {
+    background-color: var(--success) !important;
+    color: #FFFFFF !important;
+}
+
+.badge.bg-danger {
+    background-color: var(--coral) !important;
+    color: #FFFFFF !important;
+}
+
 /* Progress Bars */
 .progress-custom {
     height: 8px;
     border-radius: var(--radius-pill);
     background-color: var(--bg-subtle);
+    border: 1px solid var(--border-color);
     overflow: hidden;
 }
 
@@ -386,8 +597,53 @@ select.form-select option {
     transition: width 0.8s ease;
 }
 
+/* Nav Pills (Jobs Catalog Tabs) */
+.nav-pills .nav-link {
+    color: var(--text-muted) !important;
+    border-radius: var(--radius-sm);
+    font-weight: 500;
+    transition: var(--transition);
+}
+
+.nav-pills .nav-link:hover {
+    color: var(--azure-blue) !important;
+    background-color: var(--primary-light) !important;
+}
+
+.nav-pills .nav-link.active {
+    background-color: var(--azure-blue) !important;
+    color: #FFFFFF !important;
+}
+
+/* List Groups */
+.list-group-item {
+    background-color: transparent !important;
+    border-color: var(--border-color) !important;
+    color: var(--text-main) !important;
+}
+
+/* Tables */
+.table {
+    --bs-table-bg: transparent;
+    --bs-table-color: var(--text-main);
+    color: var(--text-main) !important;
+    border-color: var(--border-color) !important;
+}
+
+.table th, .table td {
+    border-color: var(--border-color) !important;
+    color: var(--text-main) !important;
+}
+
+/* Footer */
+footer, .footer-custom {
+    background-color: var(--bg-card) !important;
+    border-top: 1px solid var(--border-color) !important;
+    color: var(--text-muted) !important;
+}
+
 /* ==========================================================================
-   Chat & AI Assistant UI
+   Chat & AI Assistant UI (White input surface in light mode, dark in dark mode)
    ========================================================================== */
 .chat-container {
     max-width: 880px;
@@ -474,6 +730,11 @@ select.form-select option {
     font-size: 0.975rem;
 }
 
+.chat-textarea::placeholder {
+    color: var(--text-muted) !important;
+    opacity: 0.85;
+}
+
 .prompt-chip {
     background-color: var(--bg-card);
     border: 1px solid var(--border-color);
@@ -515,6 +776,7 @@ select.form-select option {
     background-color: var(--primary-light) !important;
 }
 
+/* Coral: Voice listening state */
 .voice-mic-btn.listening {
     background-color: var(--coral) !important;
     border-color: var(--coral) !important;
@@ -609,8 +871,8 @@ select.form-select option {
 }
 
 .timeline-step.completed .timeline-node {
-    background-color: var(--success);
-    border-color: var(--success);
+    background-color: var(--azure-blue);
+    border-color: var(--azure-blue);
     color: #FFFFFF;
 }
 

@@ -1,0 +1,628 @@
+{% extends "base.html" %}
+
+{% block title %}ATS Resume Builder & Optimizer — CareerBot{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Header Banner -->
+    <div class="card card-custom p-4 mb-4 text-white border-0 position-relative overflow-hidden" style="background: linear-gradient(135deg, #18181B 0%, #27272A 60%, #3B82F6 100%) !important;">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <span class="badge bg-white text-primary px-3 py-1.5 rounded-pill fw-semibold small mb-2 d-inline-flex align-items-center gap-1">
+                    <i data-lucide="shield-check" style="width: 14px; height: 14px;"></i> Industry Standard ATS Optimization
+                </span>
+                <h2 class="fw-bold mb-1">ATS Resume Builder & Optimizer 📄</h2>
+                <p class="mb-0 text-white-50">
+                    Construct single-column ATS-compliant resumes, test against target job descriptions, enhance bullet points with action verbs, and export clean PDFs.
+                </p>
+            </div>
+            <div class="col-md-4 text-md-end mt-3 mt-md-0 d-flex flex-wrap justify-content-md-end gap-2">
+                <button type="button" class="btn btn-light text-primary fw-bold rounded-pill px-3 d-inline-flex align-items-center gap-2 shadow-sm" onclick="saveDraft()">
+                    <i data-lucide="save" style="width: 16px; height: 16px;"></i> Save Draft
+                </button>
+                <a href="{{ url_for('api_resume_builder_pdf') }}" class="btn btn-primary-custom text-white fw-bold rounded-pill px-3 d-inline-flex align-items-center gap-2 shadow-sm" id="downloadPdfBtn">
+                    <i data-lucide="download" style="width: 16px; height: 16px;"></i> Download PDF
+                </a>
+            </div>
+        </div>
+    </div>
+
+    {% if not has_parsed_resume %}
+    <div class="alert alert-warning border-0 shadow-sm rounded-3 d-flex align-items-center gap-3 mb-4">
+        <i data-lucide="alert-circle" style="width: 22px; height: 22px;" class="text-warning flex-shrink-0"></i>
+        <div class="flex-grow-1">
+            <strong>No parsed resume available.</strong> Upload a resume in the <a href="{{ url_for('resume') }}" class="alert-link text-decoration-underline">Resume Section</a> to automatically build and optimize from your existing resume information.
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="row g-4">
+        <!-- Left Column: Resume Form & Section Editor (Col 7) -->
+        <div class="col-lg-7">
+            <!-- Basic Meta & Target Role -->
+            <div class="card card-custom p-4 mb-4">
+                <h5 class="fw-bold text-main mb-3 d-flex align-items-center gap-2">
+                    <i data-lucide="target" class="text-primary" style="width: 18px; height: 18px;"></i> Target Role & Document Title
+                </h5>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label text-muted small fw-semibold">Target Job Role</label>
+                        <input type="text" id="targetRoleInput" class="form-control bg-subtle text-main border-color" 
+                               value="{{ draft.target_role }}" placeholder="e.g. Data Analyst, Java Developer, Full Stack" onchange="triggerScoreRecalc()">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label text-muted small fw-semibold">Resume Title / Version</label>
+                        <input type="text" id="draftTitleInput" class="form-control bg-subtle text-main border-color" 
+                               value="{{ draft.title }}" placeholder="e.g. Software Engineer - ATS Standard">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Contact Information -->
+            <div class="card card-custom p-4 mb-4">
+                <h5 class="fw-bold text-main mb-3 d-flex align-items-center gap-2">
+                    <i data-lucide="user" class="text-primary" style="width: 18px; height: 18px;"></i> Contact Information
+                </h5>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label text-muted small fw-semibold">Full Name</label>
+                        <input type="text" id="contactName" class="form-control bg-subtle text-main border-color" 
+                               value="{{ draft.contact_info.get('full_name', '') }}" placeholder="Your Full Name">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label text-muted small fw-semibold">Email Address</label>
+                        <input type="email" id="contactEmail" class="form-control bg-subtle text-main border-color" 
+                               value="{{ draft.contact_info.get('email', '') }}" placeholder="name@example.com">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label text-muted small fw-semibold">Phone Number</label>
+                        <input type="text" id="contactPhone" class="form-control bg-subtle text-main border-color" 
+                               value="{{ draft.contact_info.get('phone', '') }}" placeholder="+91 98765 43210">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label text-muted small fw-semibold">Location (City, Country)</label>
+                        <input type="text" id="contactLocation" class="form-control bg-subtle text-main border-color" 
+                               value="{{ draft.contact_info.get('location', '') }}" placeholder="Hyderabad, India">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label text-muted small fw-semibold">LinkedIn Profile URL</label>
+                        <input type="text" id="contactLinkedin" class="form-control bg-subtle text-main border-color" 
+                               value="{{ draft.contact_info.get('linkedin', '') }}" placeholder="linkedin.com/in/username">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label text-muted small fw-semibold">GitHub / Portfolio URL</label>
+                        <input type="text" id="contactGithub" class="form-control bg-subtle text-main border-color" 
+                               value="{{ draft.contact_info.get('github', '') }}" placeholder="github.com/username">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Professional Summary -->
+            <div class="card card-custom p-4 mb-4">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="fw-bold text-main mb-0 d-flex align-items-center gap-2">
+                        <i data-lucide="align-left" class="text-primary" style="width: 18px; height: 18px;"></i> Professional Summary
+                    </h5>
+                    <button type="button" class="btn btn-sm btn-subtle text-primary" onclick="enhanceSummary()">
+                        <i data-lucide="sparkles" style="width: 14px; height: 14px;"></i> Enhance Summary
+                    </button>
+                </div>
+                <textarea id="resumeSummary" class="form-control bg-subtle text-main border-color" rows="3" 
+                          placeholder="Concise 2-3 sentence overview highlighting your technical strengths and quantified impact..." onchange="triggerScoreRecalc()">{{ draft.summary }}</textarea>
+            </div>
+
+            <!-- Technical Skills Section -->
+            <div class="card card-custom p-4 mb-4">
+                <h5 class="fw-bold text-main mb-3 d-flex align-items-center gap-2">
+                    <i data-lucide="code" class="text-primary" style="width: 18px; height: 18px;"></i> Technical Skills (Comma-Separated)
+                </h5>
+                <textarea id="skillsInput" class="form-control bg-subtle text-main border-color" rows="2" 
+                          placeholder="e.g. Python, SQL, Spring Boot, Git, Docker, RESTful APIs, Pandas, React" onchange="triggerScoreRecalc()">{% for s in draft.sections %}{% if s.type == 'skills' %}{{ s.content }}{% endif %}{% endfor %}</textarea>
+            </div>
+
+            <!-- Work Experience & Projects Dynamic Sections -->
+            <div class="card card-custom p-4 mb-4" id="experienceCard">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="fw-bold text-main mb-0 d-flex align-items-center gap-2">
+                        <i data-lucide="briefcase" class="text-primary" style="width: 18px; height: 18px;"></i> Work Experience & Internships
+                    </h5>
+                    <button type="button" class="btn btn-sm btn-outline-custom" onclick="addExperienceItem()">
+                        <i data-lucide="plus" style="width: 14px; height: 14px;"></i> Add Role
+                    </button>
+                </div>
+                <div id="experienceItemsContainer">
+                    <!-- Populated dynamically via JS -->
+                </div>
+            </div>
+
+            <div class="card card-custom p-4 mb-4" id="projectsCard">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="fw-bold text-main mb-0 d-flex align-items-center gap-2">
+                        <i data-lucide="layers" class="text-primary" style="width: 18px; height: 18px;"></i> Key Projects
+                    </h5>
+                    <button type="button" class="btn btn-sm btn-outline-custom" onclick="addProjectItem()">
+                        <i data-lucide="plus" style="width: 14px; height: 14px;"></i> Add Project
+                    </button>
+                </div>
+                <div id="projectsItemsContainer">
+                    <!-- Populated dynamically via JS -->
+                </div>
+            </div>
+
+            <!-- Education Section -->
+            <div class="card card-custom p-4 mb-4" id="educationCard">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="fw-bold text-main mb-0 d-flex align-items-center gap-2">
+                        <i data-lucide="graduation-cap" class="text-primary" style="width: 18px; height: 18px;"></i> Education
+                    </h5>
+                </div>
+                <div id="educationContainer">
+                    <div class="row g-2 mb-2">
+                        <div class="col-md-6">
+                            <input type="text" id="eduDegree" class="form-control bg-subtle text-main border-color" placeholder="Degree (e.g. B.Tech Computer Science)">
+                        </div>
+                        <div class="col-md-6">
+                            <input type="text" id="eduSchool" class="form-control bg-subtle text-main border-color" placeholder="Institution / University">
+                        </div>
+                        <div class="col-md-4">
+                            <input type="text" id="eduPeriod" class="form-control bg-subtle text-main border-color" placeholder="Graduation Year (e.g. 2024)">
+                        </div>
+                        <div class="col-md-8">
+                            <input type="text" id="eduDetails" class="form-control bg-subtle text-main border-color" placeholder="Coursework / Honors">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column: ATS Optimization Gauge & Job Description Comparison (Col 5) -->
+        <div class="col-lg-5">
+            <div class="sticky-top" style="top: 85px;">
+                <!-- Real-time ATS Score Card -->
+                <div class="card card-custom p-4 mb-4">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <div>
+                            <h5 class="fw-bold text-main mb-0 d-flex align-items-center gap-2">
+                                <i data-lucide="gauge" class="text-primary" style="width: 18px; height: 18px;"></i> ATS Compatibility Estimate
+                            </h5>
+                            <small class="text-muted" style="font-size: 0.75rem;">Deterministic scoring based on resume criteria</small>
+                        </div>
+                        <span class="badge bg-primary text-white fs-6 px-3 py-1 rounded-pill" id="overallScoreBadge">
+                            ATS Score: {{ draft.ats_score }}/100
+                        </span>
+                    </div>
+
+                    <div class="progress mb-3" style="height: 12px; background-color: var(--bg-subtle);">
+                        <div class="progress-bar bg-primary progress-bar-striped progress-bar-animated" role="progressbar" 
+                             id="atsProgressBar" style="width: {{ draft.ats_score }}%;"></div>
+                    </div>
+
+                    <div class="p-3 bg-subtle rounded-3 mb-3 border border-color">
+                        <div class="small fw-semibold text-main mb-2">Rubric Breakdown:</div>
+                        <div class="d-flex justify-content-between small text-muted mb-1">
+                            <span>Keyword Coverage (25%):</span>
+                            <strong class="text-main" id="scoreKeyword">--/25</strong>
+                        </div>
+                        <div class="d-flex justify-content-between small text-muted mb-1">
+                            <span>Skill Coverage (25%):</span>
+                            <strong class="text-main" id="scoreSkills">--/25</strong>
+                        </div>
+                        <div class="d-flex justify-content-between small text-muted mb-1">
+                            <span>Section Completeness (20%):</span>
+                            <strong class="text-main" id="scoreSections">--/20</strong>
+                        </div>
+                        <div class="d-flex justify-content-between small text-muted mb-1">
+                            <span>Role Relevance (15%):</span>
+                            <strong class="text-main" id="scoreRole">--/15</strong>
+                        </div>
+                        <div class="d-flex justify-content-between small text-muted">
+                            <span>Formatting Compatibility (15%):</span>
+                            <strong class="text-main" id="scoreVerbs">--/15</strong>
+                        </div>
+                    </div>
+
+                    <!-- Missing Keywords / Warnings Alert -->
+                    <div id="missingKeywordsContainer" class="mb-3">
+                        <div class="small fw-semibold text-danger mb-1 d-flex align-items-center gap-1">
+                            <i data-lucide="alert-circle" style="width: 14px; height: 14px;"></i> Missing Core Role Skills:
+                        </div>
+                        <div class="d-flex flex-wrap gap-1" id="missingSkillsBadges">
+                            <span class="badge bg-subtle text-muted">Add target role skills</span>
+                        </div>
+                    </div>
+
+                    <!-- Actionable Recommendations -->
+                    <div>
+                        <div class="small fw-semibold text-main mb-1.5">Actionable Optimization Tips:</div>
+                        <ul class="small text-muted ps-3 mb-0" id="recommendationsList">
+                            <li>Keep bullet points focused on quantifiable outcomes (e.g. "increased speed by 20%").</li>
+                            <li>Include standard headings: Summary, Technical Skills, Experience, Projects, Education.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Target Job Description Testing Card -->
+                <div class="card card-custom p-4 mb-4">
+                    <h5 class="fw-bold text-main mb-2 d-flex align-items-center gap-2">
+                        <i data-lucide="file-search" class="text-primary" style="width: 18px; height: 18px;"></i> Match Specific Job Description
+                    </h5>
+                    <p class="text-muted small mb-3">
+                        Paste a real job description below to test keyword density and calculate job-specific ATS fit.
+                    </p>
+                    <textarea id="targetJobDescription" class="form-control bg-subtle text-main border-color mb-3" rows="4" 
+                              placeholder="Paste requirements, responsibilities, or complete job posting text here..."></textarea>
+                    <button type="button" class="btn btn-outline-custom w-100 d-inline-flex align-items-center justify-content-center gap-2" onclick="recalculateATSWithJD()">
+                        <i data-lucide="refresh-cw" style="width: 15px; height: 15px;"></i> Recalculate Against Job Posting
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let currentDraft = {{ draft|tojson }};
+
+document.addEventListener('DOMContentLoaded', () => {
+    populateFormFromDraft(currentDraft);
+    triggerScoreRecalc();
+});
+
+function populateFormFromDraft(draft) {
+    if (!draft) return;
+    document.getElementById('targetRoleInput').value = draft.target_role || '';
+    document.getElementById('draftTitleInput').value = draft.title || '';
+
+    const contact = draft.contact_info || {};
+    document.getElementById('contactName').value = contact.full_name || '';
+    document.getElementById('contactEmail').value = contact.email || '';
+    document.getElementById('contactPhone').value = contact.phone || '';
+    document.getElementById('contactLocation').value = contact.location || '';
+    document.getElementById('contactLinkedin').value = contact.linkedin || '';
+    document.getElementById('contactGithub').value = contact.github || '';
+
+    document.getElementById('resumeSummary').value = draft.summary || '';
+
+    // Sections
+    const expContainer = document.getElementById('experienceItemsContainer');
+    const projContainer = document.getElementById('projectsItemsContainer');
+    expContainer.innerHTML = '';
+    projContainer.innerHTML = '';
+
+    const sections = draft.sections || [];
+    sections.forEach(sec => {
+        if (sec.type === 'skills') {
+            document.getElementById('skillsInput').value = sec.content || '';
+        } else if (sec.type === 'experience') {
+            (sec.items || []).forEach(item => addExperienceItem(item));
+        } else if (sec.type === 'projects') {
+            (sec.items || []).forEach(item => addProjectItem(item));
+        } else if (sec.type === 'education') {
+            const firstEdu = (sec.items || [])[0] || {};
+            document.getElementById('eduDegree').value = firstEdu.title || '';
+            document.getElementById('eduSchool').value = firstEdu.organization || '';
+            document.getElementById('eduPeriod').value = firstEdu.period || '';
+            document.getElementById('eduDetails').value = (firstEdu.bullets || []).join('; ');
+        }
+    });
+
+    if (expContainer.children.length === 0) addExperienceItem();
+    if (projContainer.children.length === 0) addProjectItem();
+}
+
+function addExperienceItem(data = null) {
+    const container = document.getElementById('experienceItemsContainer');
+    const idx = container.children.length;
+    const title = data ? data.title : '';
+    const org = data ? data.organization : '';
+    const period = data ? data.period : '';
+    const bullets = data && data.bullets ? data.bullets.join('\n') : '';
+
+    const itemDiv = document.createElement('div');
+    itemDiv.className = 'p-3 bg-subtle rounded-3 border border-color mb-3 experience-entry';
+    itemDiv.innerHTML = `
+        <div class="row g-2 mb-2">
+            <div class="col-md-5">
+                <input type="text" class="form-control form-control-sm bg-card text-main border-color exp-title" placeholder="Job Title" value="${title}" onchange="triggerScoreRecalc()">
+            </div>
+            <div class="col-md-4">
+                <input type="text" class="form-control form-control-sm bg-card text-main border-color exp-org" placeholder="Company / Org" value="${org}">
+            </div>
+            <div class="col-md-3 d-flex gap-1">
+                <input type="text" class="form-control form-control-sm bg-card text-main border-color exp-period" placeholder="Year / Period" value="${period}">
+                <button type="button" class="btn btn-sm btn-outline-danger" onclick="this.closest('.experience-entry').remove(); triggerScoreRecalc();">
+                    <i data-lucide="trash-2" style="width: 14px; height: 14px;"></i>
+                </button>
+            </div>
+        </div>
+        <div class="mb-1 d-flex justify-content-between align-items-center">
+            <small class="text-muted">Bullet Points (One per line):</small>
+            <button type="button" class="btn btn-sm btn-subtle text-primary py-0" onclick="enhanceSelectedBullets(this)">
+                <i data-lucide="sparkles" style="width: 12px; height: 12px;"></i> AI Optimize Bullets
+            </button>
+        </div>
+        <textarea class="form-control form-control-sm bg-card text-main border-color exp-bullets" rows="3" placeholder="• Led development of...&#10;• Reduced latency by 20%..." onchange="triggerScoreRecalc()">${bullets}</textarea>
+    `;
+    container.appendChild(itemDiv);
+    if (window.lucide) lucide.createIcons();
+}
+
+function addProjectItem(data = null) {
+    const container = document.getElementById('projectsItemsContainer');
+    const idx = container.children.length;
+    const title = data ? data.title : '';
+    const org = data ? data.organization : '';
+    const period = data ? data.period : '';
+    const bullets = data && data.bullets ? data.bullets.join('\n') : '';
+
+    const itemDiv = document.createElement('div');
+    itemDiv.className = 'p-3 bg-subtle rounded-3 border border-color mb-3 project-entry';
+    itemDiv.innerHTML = `
+        <div class="row g-2 mb-2">
+            <div class="col-md-6">
+                <input type="text" class="form-control form-control-sm bg-card text-main border-color proj-title" placeholder="Project Title" value="${title}" onchange="triggerScoreRecalc()">
+            </div>
+            <div class="col-md-3">
+                <input type="text" class="form-control form-control-sm bg-card text-main border-color proj-period" placeholder="Technologies / Year" value="${period}">
+            </div>
+            <div class="col-md-3 d-flex justify-content-end">
+                <button type="button" class="btn btn-sm btn-outline-danger" onclick="this.closest('.project-entry').remove(); triggerScoreRecalc();">
+                    <i data-lucide="trash-2" style="width: 14px; height: 14px;"></i>
+                </button>
+            </div>
+        </div>
+        <div class="mb-1 d-flex justify-content-between align-items-center">
+            <small class="text-muted">Key Achievements & Tools (One per line):</small>
+            <button type="button" class="btn btn-sm btn-subtle text-primary py-0" onclick="enhanceSelectedBullets(this)">
+                <i data-lucide="sparkles" style="width: 12px; height: 12px;"></i> AI Optimize Bullets
+            </button>
+        </div>
+        <textarea class="form-control form-control-sm bg-card text-main border-color proj-bullets" rows="2" placeholder="• Built using Python and Flask...&#10;• Implemented high-throughput data processing..." onchange="triggerScoreRecalc()">${bullets}</textarea>
+    `;
+    container.appendChild(itemDiv);
+    if (window.lucide) lucide.createIcons();
+}
+
+function collectFormData() {
+    const targetRole = document.getElementById('targetRoleInput').value.trim() || 'Software Engineer';
+    const title = document.getElementById('draftTitleInput').value.trim() || `${targetRole} Resume`;
+
+    const contact = {
+        full_name: document.getElementById('contactName').value.trim(),
+        email: document.getElementById('contactEmail').value.trim(),
+        phone: document.getElementById('contactPhone').value.trim(),
+        location: document.getElementById('contactLocation').value.trim(),
+        linkedin: document.getElementById('contactLinkedin').value.trim(),
+        github: document.getElementById('contactGithub').value.trim()
+    };
+
+    const summary = document.getElementById('resumeSummary').value.trim();
+    const skillsContent = document.getElementById('skillsInput').value.trim();
+
+    // Collect experience
+    const expItems = [];
+    document.querySelectorAll('.experience-entry').forEach(el => {
+        const t = el.querySelector('.exp-title').value.trim();
+        const o = el.querySelector('.exp-org').value.trim();
+        const p = el.querySelector('.exp-period').value.trim();
+        const b = el.querySelector('.exp-bullets').value.split('\n').map(x => x.trim()).filter(Boolean);
+        if (t || o || b.length > 0) {
+            expItems.push({ title: t, organization: o, period: p, bullets: b });
+        }
+    });
+
+    // Collect projects
+    const projItems = [];
+    document.querySelectorAll('.project-entry').forEach(el => {
+        const t = el.querySelector('.proj-title').value.trim();
+        const p = el.querySelector('.proj-period').value.trim();
+        const b = el.querySelector('.proj-bullets').value.split('\n').map(x => x.trim()).filter(Boolean);
+        if (t || b.length > 0) {
+            projItems.push({ title: t, organization: 'Project', period: p, bullets: b });
+        }
+    });
+
+    // Collect education
+    const eduItems = [{
+        title: document.getElementById('eduDegree').value.trim(),
+        organization: document.getElementById('eduSchool').value.trim(),
+        period: document.getElementById('eduPeriod').value.trim(),
+        bullets: document.getElementById('eduDetails').value.split(';').map(x => x.trim()).filter(Boolean)
+    }];
+
+    const sections = [
+        { heading: 'Technical Skills', type: 'skills', content: skillsContent },
+        { heading: 'Work Experience', type: 'experience', items: expItems },
+        { heading: 'Projects', type: 'projects', items: projItems },
+        { heading: 'Education', type: 'education', items: eduItems }
+    ];
+
+    return {
+        title,
+        target_role: targetRole,
+        contact_info: contact,
+        summary,
+        sections
+    };
+}
+
+let recalcTimer = null;
+function triggerScoreRecalc() {
+    clearTimeout(recalcTimer);
+    recalcTimer = setTimeout(() => {
+        recalculateATSWithJD();
+    }, 400);
+}
+
+async function recalculateATSWithJD() {
+    const formData = collectFormData();
+    const jobDesc = document.getElementById('targetJobDescription').value.trim();
+
+    try {
+        const res = await fetch('/api/resume/builder/ats-score', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCsrfToken(),
+                'X-CSRF-Token': getCsrfToken()
+            },
+            body: JSON.stringify({
+                resume_data: formData,
+                job_description: jobDesc
+            })
+        });
+        const data = await res.json();
+        if (res.ok && data.status === 'success') {
+            updateScoreUI(data.result);
+        }
+    } catch (err) {
+        console.error('ATS calc error:', err);
+    }
+}
+
+function updateScoreUI(res) {
+    const overall = res.overall_score || 0;
+    const badge = document.getElementById('overallScoreBadge');
+    const bar = document.getElementById('atsProgressBar');
+    if (badge) badge.innerText = `${overall}/100`;
+    if (bar) {
+        bar.style.width = `${overall}%`;
+        if (overall >= 75) bar.className = 'progress-bar bg-success';
+        else if (overall >= 50) bar.className = 'progress-bar bg-primary';
+        else bar.className = 'progress-bar bg-warning';
+    }
+
+    const sub = res.subscores || {};
+    document.getElementById('scoreKeyword').innerText = `${sub.keyword_coverage || 0}/25`;
+    document.getElementById('scoreSkills').innerText = `${sub.skills_coverage || 0}/25`;
+    document.getElementById('scoreSections').innerText = `${sub.section_completeness || 0}/20`;
+    document.getElementById('scoreRole').innerText = `${sub.role_relevance || 0}/15`;
+    document.getElementById('scoreVerbs').innerText = `${sub.action_verbs_formatting || 0}/15`;
+
+    // Missing skills
+    const missingContainer = document.getElementById('missingSkillsBadges');
+    if (missingContainer) {
+        const missing = res.missing_keywords || [];
+        if (missing.length === 0) {
+            missingContainer.innerHTML = '<span class="badge bg-success text-white">None! High keyword density</span>';
+        } else {
+            missingContainer.innerHTML = missing.slice(0, 8).map(k => `<span class="badge bg-danger-subtle text-danger border border-danger-subtle">${k}</span>`).join(' ');
+        }
+    }
+
+    // Recommendations
+    const recList = document.getElementById('recommendationsList');
+    if (recList && res.recommendations) {
+        recList.innerHTML = res.recommendations.map(r => `<li>${r}</li>`).join('');
+    }
+}
+
+async function saveDraft() {
+    const formData = collectFormData();
+    const jobDesc = document.getElementById('targetJobDescription').value.trim();
+
+    try {
+        const res = await fetch('/api/resume/builder/save', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCsrfToken(),
+                'X-CSRF-Token': getCsrfToken()
+            },
+            body: JSON.stringify({
+                ...formData,
+                job_description: jobDesc
+            })
+        });
+        const data = await res.json();
+        if (res.ok && data.status === 'success') {
+            alert('Draft saved successfully! ATS score updated.');
+            if (data.draft && data.draft.ats_breakdown) {
+                updateScoreUI(data.draft.ats_breakdown);
+            }
+        } else {
+            alert(data.message || 'Failed to save draft.');
+        }
+    } catch (err) {
+        console.error('Save error:', err);
+        alert('Network error while saving draft.');
+    }
+}
+
+async function enhanceSelectedBullets(btn) {
+    const textarea = btn.closest('.p-3').querySelector('textarea');
+    if (!textarea || !textarea.value.trim()) {
+        alert('Please enter a bullet point first to optimize.');
+        return;
+    }
+
+    const lines = textarea.value.split('\n').filter(Boolean);
+    const targetRole = document.getElementById('targetRoleInput').value.trim() || 'Software Engineer';
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Optimizing...';
+
+    try {
+        const enhancedLines = [];
+        for (const line of lines) {
+            const res = await fetch('/api/resume/builder/optimize-bullet', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCsrfToken(),
+                    'X-CSRF-Token': getCsrfToken()
+                },
+                body: JSON.stringify({ bullet: line, role: targetRole })
+            });
+            const data = await res.json();
+            if (res.ok && data.enhanced) {
+                enhancedLines.push(data.enhanced);
+            } else {
+                enhancedLines.push(line);
+            }
+        }
+        textarea.value = enhancedLines.join('\n');
+        triggerScoreRecalc();
+    } catch (e) {
+        console.error('Enhance error:', e);
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i data-lucide="sparkles" style="width: 12px; height: 12px;"></i> AI Optimize Bullets';
+        if (window.lucide) lucide.createIcons();
+    }
+}
+
+async function enhanceSummary() {
+    const summaryEl = document.getElementById('resumeSummary');
+    const targetRole = document.getElementById('targetRoleInput').value.trim() || 'Software Engineer';
+    const skills = document.getElementById('skillsInput').value.trim();
+
+    if (!summaryEl.value.trim()) {
+        summaryEl.value = `Proactive ${targetRole} with strong analytical problem-solving abilities and core foundation in ${skills || 'modern software development'}. Experienced in building reliable applications and collaborating cross-functionally to achieve measurable results.`;
+        triggerScoreRecalc();
+        return;
+    }
+
+    try {
+        const res = await fetch('/api/resume/builder/optimize-bullet', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCsrfToken(),
+                'X-CSRF-Token': getCsrfToken()
+            },
+            body: JSON.stringify({ bullet: summaryEl.value.trim(), role: targetRole })
+        });
+        const data = await res.json();
+        if (res.ok && data.enhanced) {
+            summaryEl.value = data.enhanced;
+            triggerScoreRecalc();
+        }
+    } catch (e) {
+        console.error(e);
+    }
+}
+</script>
+{% endblock %}

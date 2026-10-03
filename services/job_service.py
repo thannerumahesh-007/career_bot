@@ -521,14 +521,15 @@ class CombinedJobProvider(JobProvider):
         seen_keys = set()
         combined = []
 
-        # 1. Add verified database jobs first
-        for job in db_jobs:
-            key = self._normalize_key(job.get("title", ""), job.get("company", ""))
-            seen_keys.add(key)
-            combined.append(job)
-
-        # 2. Add live jobs if not duplicate
+        # 1. Add current live jobs first (primary discovery source)
         for job in live_jobs:
+            key = self._normalize_key(job.get("title", ""), job.get("company", ""))
+            if key not in seen_keys:
+                seen_keys.add(key)
+                combined.append(job)
+
+        # 2. Add other non-duplicate verified jobs if available
+        for job in db_jobs:
             key = self._normalize_key(job.get("title", ""), job.get("company", ""))
             if key not in seen_keys:
                 seen_keys.add(key)

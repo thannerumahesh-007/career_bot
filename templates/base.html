@@ -40,41 +40,55 @@
                 <ul class="navbar-nav mx-auto mb-2 mb-lg-0 gap-1 fs-6">
                     {% if g.current_user %}
                     <li class="nav-item">
-                        <a class="nav-link {% if request.endpoint == 'dashboard' %}active{% endif %}" href="{{ url_for('dashboard') }}">
-                            <i data-lucide="layout-dashboard" style="width: 18px; height: 18px;"></i> Dashboard
+                        <a class="nav-link {% if request.endpoint and request.endpoint == 'dashboard' %}active{% endif %}" href="{{ url_for('dashboard') }}">
+                            <i data-lucide="layout-dashboard" style="width: 17px; height: 17px;"></i> Dashboard
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link {% if request.endpoint == 'chat' %}active{% endif %}" href="{{ url_for('chat') }}">
-                            <i data-lucide="message-square" style="width: 18px; height: 18px;"></i> AI Assistant
+                        <a class="nav-link {% if request.endpoint and request.endpoint == 'chat' %}active{% endif %}" href="{{ url_for('chat') }}">
+                            <i data-lucide="message-square" style="width: 17px; height: 17px;"></i> AI Assistant
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link {% if request.endpoint == 'jobs' or request.endpoint == 'jobs_resume_matches' %}active{% endif %}" href="{{ url_for('jobs') }}">
-                            <i data-lucide="briefcase" style="width: 18px; height: 18px;"></i> Jobs
+                        <a class="nav-link {% if request.endpoint and (request.endpoint == 'jobs' or request.endpoint == 'jobs_resume_matches') %}active{% endif %}" href="{{ url_for('jobs') }}">
+                            <i data-lucide="briefcase" style="width: 17px; height: 17px;"></i> Jobs
+                        </a>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle {% if request.endpoint and 'resume' in request.endpoint %}active{% endif %}" href="#" role="button" data-bs-toggle="dropdown">
+                            <i data-lucide="file-text" style="width: 17px; height: 17px;"></i> Resume
+                        </a>
+                        <ul class="dropdown-menu border-0 shadow bg-card">
+                            <li><a class="dropdown-item text-main" href="{{ url_for('resume') }}"><i data-lucide="upload" style="width: 15px; height: 15px;" class="me-2 text-primary"></i>Resume Parser</a></li>
+                            <li><a class="dropdown-item text-main" href="{{ url_for('resume_builder_page') }}"><i data-lucide="pen-tool" style="width: 15px; height: 15px;" class="me-2 text-primary"></i>ATS Resume Builder</a></li>
+                        </ul>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint and request.endpoint == 'interview_page' %}active{% endif %}" href="{{ url_for('interview_page') }}">
+                            <i data-lucide="mic" style="width: 17px; height: 17px;"></i> AI Interview
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link {% if request.endpoint == 'resume' %}active{% endif %}" href="{{ url_for('resume') }}">
-                            <i data-lucide="file-text" style="width: 18px; height: 18px;"></i> Resume
+                        <a class="nav-link {% if request.endpoint and request.endpoint == 'companies_page' %}active{% endif %}" href="{{ url_for('companies_page') }}">
+                            <i data-lucide="building-2" style="width: 17px; height: 17px;"></i> Companies
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link {% if request.endpoint == 'roadmap' %}active{% endif %}" href="{{ url_for('roadmap') }}">
-                            <i data-lucide="map" style="width: 18px; height: 18px;"></i> Roadmap
+                        <a class="nav-link {% if request.endpoint and request.endpoint == 'roadmap' %}active{% endif %}" href="{{ url_for('roadmap') }}">
+                            <i data-lucide="map" style="width: 17px; height: 17px;"></i> Roadmap
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link {% if request.endpoint == 'news' %}active{% endif %}" href="{{ url_for('news') }}">
-                            <i data-lucide="newspaper" style="width: 18px; height: 18px;"></i> Corporate News
+                        <a class="nav-link {% if request.endpoint and request.endpoint == 'news' %}active{% endif %}" href="{{ url_for('news') }}">
+                            <i data-lucide="newspaper" style="width: 17px; height: 17px;"></i> Corporate News
                         </a>
                     </li>
                     {% else %}
                     <li class="nav-item">
-                        <a class="nav-link {% if request.endpoint == 'index' %}active{% endif %}" href="{{ url_for('index') }}">Home</a>
+                        <a class="nav-link {% if request.endpoint and request.endpoint == 'index' %}active{% endif %}" href="{{ url_for('index') }}">Home</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link {% if request.endpoint == 'news' %}active{% endif %}" href="{{ url_for('news') }}">
+                        <a class="nav-link {% if request.endpoint and request.endpoint == 'news' %}active{% endif %}" href="{{ url_for('news') }}">
                             <i data-lucide="newspaper" style="width: 18px; height: 18px;"></i> Corporate News
                         </a>
                     </li>

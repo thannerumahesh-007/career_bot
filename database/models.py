@@ -30,6 +30,9 @@ class User(Base):
     resumes = relationship("Resume", back_populates="user", cascade="all, delete-orphan")
     chat_history = relationship("ChatHistory", back_populates="user", cascade="all, delete-orphan")
     job_interactions = relationship("UserJobInteraction", back_populates="user", cascade="all, delete-orphan")
+    followed_companies = relationship("UserCompanyFollow", back_populates="user", cascade="all, delete-orphan")
+    resume_drafts = relationship("ResumeDraft", back_populates="user", cascade="all, delete-orphan")
+    interviews = relationship("InterviewSession", back_populates="user", cascade="all, delete-orphan")
 
     def set_password(self, password: str):
         """Hashes and sets user password."""
@@ -282,6 +285,185 @@ class UserJobInteraction(Base):
             "user_id": self.user_id,
             "job_id": self.job_id,
             "is_saved": self.is_saved,
+            "created_at": self.created_at.isoformat() if self.created_at else ""
+        }
+
+
+class Company(Base):
+    """Company catalog entity for following and personalized news."""
+    __tablename__ = "companies"
+
+    id = Column(Integer, primary_key=True)
+    name = Column(String(150), unique=True, nullable=False, index=True)
+    normalized_name = Column(String(150), index=True)
+    industry = Column(String(100), default="Technology")
+    website = Column(String(255), default="")
+    logo_url = Column(String(500), default="")
+    description = Column(Text, default="")
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+    def to_dict(self) -> dict:
+        return {
+            "id": self.id,
+            "name": self.name,
+            "normalized_name": self.normalized_name or self.name.lower(),
+            "industry": self.industry,
+            "website": self.website,
+            "logo_url": self.logo_url,
+            "description": self.description
+        }
+
+
+class UserCompanyFollow(Base):
+    """Stores companies followed by users for corporate intelligence personalization."""
+    __tablename__ = "user_company_follows"
+
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    company_name = Column(String(150), nullable=False, index=True)
+    followed_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+    user = relationship("User", back_populates="followed_companies")
+
+    def to_dict(self) -> dict:
+        return {
+            "id": self.id,
+            "user_id": self.user_id,
+            "company_name": self.company_name,
+            "followed_at": self.followed_at.isoformat() if self.followed_at else ""
+        }
+
+
+class ResumeDraft(Base):
+    """Stores ATS-optimized resumes created or edited using the Resume Builder."""
+    __tablename__ = "resume_drafts"
+
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    title = Column(String(150), default="My ATS Resume")
+    target_role = Column(String(150), default="Software Engineer")
+    contact_info_json = Column(Text, default="{}")
+    summary = Column(Text, default="")
+    sections_json = Column(Text, default="[]")
+    ats_score = Column(Integer, default=0)
+    ats_breakdown_json = Column(Text, default="{}")
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+
+    user = relationship("User", back_populates="resume_drafts")
+
+    @property
+    def contact_info(self) -> dict:
+        try:
+            return json.loads(self.contact_info_json) if self.contact_info_json else {}
+        except Exception:
+            return {}
+
+    @contact_info.setter
+    def contact_info(self, val: dict):
+        self.contact_info_json = json.dumps(val or {})
+
+    @property
+    def sections(self) -> list:
+        try:
+            return json.loads(self.sections_json) if self.sections_json else []
+        except Exception:
+            return []
+
+    @sections.setter
+    def sections(self, val: list):
+        self.sections_json = json.dumps(val or [])
+
+    @property
+    def ats_breakdown(self) -> dict:
+        try:
+            return json.loads(self.ats_breakdown_json) if self.ats_breakdown_json else {}
+        except Exception:
+            return {}
+
+    @ats_breakdown.setter
+    def ats_breakdown(self, val: dict):
+        self.ats_breakdown_json = json.dumps(val or {})
+
+    def to_dict(self) -> dict:
+        return {
+            "id": self.id,
+            "user_id": self.user_id,
+            "title": self.title,
+            "target_role": self.target_role,
+            "contact_info": self.contact_info,
+            "summary": self.summary,
+            "sections": self.sections,
+            "ats_score": self.ats_score,
+            "ats_breakdown": self.ats_breakdown,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else ""
+        }
+
+
+class InterviewSession(Base):
+    """Stores interactive AI mock interview simulation sessions and final reports."""
+    __tablename__ = "interview_sessions"
+
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    target_role = Column(String(100), nullable=False)
+    interview_type = Column(String(50), default="Technical")
+    difficulty = Column(String(50), default="Intermediate")
+    status = Column(String(50), default="in_progress")  # in_progress, completed
+    current_question_index = Column(Integer, default=0)
+    questions_json = Column(Text, default="[]")
+    turns_json = Column(Text, default="[]")
+    final_report_json = Column(Text, default="{}")
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+
+    user = relationship("User", back_populates="interviews")
+
+    @property
+    def questions(self) -> list:
+        try:
+            return json.loads(self.questions_json) if self.questions_json else []
+        except Exception:
+            return []
+
+    @questions.setter
+    def questions(self, val: list):
+        self.questions_json = json.dumps(val or [])
+
+    @property
+    def turns(self) -> list:
+        try:
+            return json.loads(self.turns_json) if self.turns_json else []
+        except Exception:
+            return []
+
+    @turns.setter
+    def turns(self, val: list):
+        self.turns_json = json.dumps(val or [])
+
+    @property
+    def final_report(self) -> dict:
+        try:
+            return json.loads(self.final_report_json) if self.final_report_json else {}
+        except Exception:
+            return {}
+
+    @final_report.setter
+    def final_report(self, val: dict):
+        self.final_report_json = json.dumps(val or {})
+
+    def to_dict(self) -> dict:
+        return {
+            "id": self.id,
+            "user_id": self.user_id,
+            "target_role": self.target_role,
+            "interview_type": self.interview_type,
+            "difficulty": self.difficulty,
+            "status": self.status,
+            "current_question_index": self.current_question_index,
+            "questions": self.questions,
+            "turns": self.turns,
+            "final_report": self.final_report,
             "created_at": self.created_at.isoformat() if self.created_at else ""
         }
 

@@ -1,0 +1,571 @@
+{% extends "base.html" %}
+
+{% block title %}AI Mock Interview Simulator — CareerBot{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Header Banner -->
+    <div class="card card-custom p-4 mb-4 text-white border-0 position-relative overflow-hidden" style="background: linear-gradient(135deg, #18181B 0%, #27272A 60%, #3B82F6 100%) !important;">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <span class="badge bg-white text-primary px-3 py-1.5 rounded-pill fw-semibold small mb-2 d-inline-flex align-items-center gap-1">
+                    <i data-lucide="mic" style="width: 14px; height: 14px;"></i> Interactive AI Interviewer
+                </span>
+                <h2 class="fw-bold mb-1">AI Mock Interview Simulator 🎙️</h2>
+                <p class="mb-0 text-white-50">
+                    Conduct rigorous, 5-question structured interviews tailored to your target role and resume. Receive turn-by-turn rubric evaluations and an in-depth readiness report.
+                </p>
+            </div>
+            <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                <button type="button" class="btn btn-light text-primary fw-bold rounded-pill px-4 d-inline-flex align-items-center gap-2 shadow-sm" onclick="showNewInterviewModal()">
+                    <i data-lucide="play" style="width: 16px; height: 16px;"></i> Start New Interview
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Active Interview Container (Dynamic) -->
+    <div id="activeInterviewSection" class="d-none mb-4">
+        <div class="card card-custom p-4 mb-3 border-primary border-2">
+            <!-- Progress Bar -->
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="badge bg-primary text-white px-3 py-1.5 rounded-pill" id="questionStepBadge">
+                    Question 1 of 5
+                </span>
+                <span class="badge bg-subtle text-accent border-color" id="interviewMetaBadge">
+                    Technical • Intermediate
+                </span>
+            </div>
+            <div class="progress mb-4" style="height: 8px; background-color: var(--bg-subtle);">
+                <div class="progress-bar bg-primary progress-bar-striped progress-bar-animated" id="interviewProgressBar" style="width: 20%;"></div>
+            </div>
+
+            <!-- Question Display -->
+            <div class="p-3 bg-subtle rounded-3 border border-color mb-4">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <small class="text-primary fw-semibold text-uppercase tracking-wider" id="questionTypeLabel">Technical Question</small>
+                    <button type="button" class="btn btn-sm btn-subtle text-primary py-0" onclick="speakCurrentQuestion()">
+                        <i data-lucide="volume-2" style="width: 14px; height: 14px;"></i> Read Aloud
+                    </button>
+                </div>
+                <h5 class="fw-bold text-main mb-1" id="currentQuestionText">Loading question...</h5>
+                <small class="text-muted" id="questionFocusText"></small>
+            </div>
+
+            <!-- Answer Form -->
+            <div id="answerInputContainer">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <label class="form-label text-main fw-semibold small mb-0">Your Answer:</label>
+                    <button type="button" class="btn btn-sm btn-outline-custom d-inline-flex align-items-center gap-1" id="micBtn" onclick="toggleSpeechRecognition()">
+                        <i data-lucide="mic" id="micIcon" style="width: 14px; height: 14px;"></i>
+                        <span id="micLabel">Speak Answer</span>
+                    </button>
+                </div>
+                <textarea id="candidateAnswerText" class="form-control bg-subtle text-main border-color mb-3" rows="4" 
+                          placeholder="Type or speak your answer here. Provide specific technical details, architecture choices, or examples..."></textarea>
+                
+                <div class="d-flex justify-content-end gap-2">
+                    <button type="button" class="btn btn-primary-custom px-4 d-inline-flex align-items-center gap-2" id="submitAnswerBtn" onclick="submitAnswer()">
+                        <i data-lucide="send" style="width: 15px; height: 15px;"></i> Submit Answer for Evaluation
+                    </button>
+                </div>
+            </div>
+
+            <!-- Turn Evaluation Feedback (Revealed after answer submission) -->
+            <div id="turnEvaluationContainer" class="d-none mt-4 pt-4 border-top border-color">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h6 class="fw-bold text-main mb-0 d-flex align-items-center gap-2">
+                        <i data-lucide="check-circle" class="text-success" style="width: 18px; height: 18px;"></i> AI Turn Evaluation
+                    </h6>
+                    <span class="badge bg-success text-white px-3 py-1 rounded-pill" id="turnScoreBadge">
+                        Score: 8/10
+                    </span>
+                </div>
+
+                <!-- Rubric Badges -->
+                <div class="row g-2 mb-3">
+                    <div class="col-6 col-md">
+                        <div class="p-2 bg-subtle rounded text-center border border-color">
+                            <small class="text-muted d-block">Correctness</small>
+                            <strong class="text-main" id="turnCorrectness">8/10</strong>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md">
+                        <div class="p-2 bg-subtle rounded text-center border border-color">
+                            <small class="text-muted d-block">Relevance</small>
+                            <strong class="text-main" id="turnRelevance">8/10</strong>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md">
+                        <div class="p-2 bg-subtle rounded text-center border border-color">
+                            <small class="text-muted d-block">Completeness</small>
+                            <strong class="text-main" id="turnCompleteness">7/10</strong>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md">
+                        <div class="p-2 bg-subtle rounded text-center border border-color">
+                            <small class="text-muted d-block">Tech Depth</small>
+                            <strong class="text-main" id="turnDepth">8/10</strong>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md">
+                        <div class="p-2 bg-subtle rounded text-center border border-color">
+                            <small class="text-muted d-block">Communication</small>
+                            <strong class="text-main" id="turnComm">8/10</strong>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Feedback & Ideal Points -->
+                <div class="p-3 bg-subtle rounded-3 border border-color mb-3">
+                    <div class="small fw-semibold text-main mb-1">Critique & Suggestions:</div>
+                    <p class="small text-muted mb-2" id="turnFeedbackText"></p>
+                    <div class="small fw-semibold text-main mb-1">Expected Key Points:</div>
+                    <ul class="small text-muted ps-3 mb-0" id="turnIdealPointsList"></ul>
+                </div>
+
+                <div class="d-flex justify-content-end">
+                    <button type="button" class="btn btn-primary-custom px-4 d-inline-flex align-items-center gap-2" id="nextQuestionBtn" onclick="advanceToNextQuestion()">
+                        Next Question <i data-lucide="arrow-right" style="width: 15px; height: 15px;"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Final Comprehensive Report Container (Dynamic) -->
+    <div id="finalReportSection" class="d-none mb-4">
+        <div class="card card-custom p-4 mb-4 border-success border-2">
+            <div class="d-flex justify-content-between align-items-start mb-3 flex-wrap gap-2">
+                <div>
+                    <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-1.5 rounded-pill fw-semibold small mb-2 d-inline-block">
+                        <i data-lucide="award" style="width: 14px; height: 14px;" class="me-1"></i> Interview Completed
+                    </span>
+                    <h3 class="fw-bold text-main mb-1" id="reportRoleTitle">Data Analyst Technical Interview</h3>
+                    <p class="text-muted small mb-0" id="reportReadinessLevel"></p>
+                </div>
+                <div class="text-end">
+                    <span class="fs-1 fw-bold text-primary" id="reportOverallScore">85</span>
+                    <span class="fs-5 text-muted">/100</span>
+                </div>
+            </div>
+
+            <!-- Rubric Breakdown -->
+            <div class="p-3 bg-subtle rounded-3 border border-color mb-4">
+                <div class="small fw-semibold text-main mb-2">Aggregate Rubric Performance:</div>
+                <div class="row g-2 text-center" id="reportRubricRow"></div>
+            </div>
+
+            <div class="row g-3 mb-4">
+                <div class="col-md-6">
+                    <div class="p-3 bg-subtle rounded-3 border border-color h-100">
+                        <div class="small fw-semibold text-success mb-2 d-flex align-items-center gap-1">
+                            <i data-lucide="thumbs-up" style="width: 15px; height: 15px;"></i> Key Strengths Observed
+                        </div>
+                        <ul class="small text-muted ps-3 mb-0" id="reportStrengthsList"></ul>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="p-3 bg-subtle rounded-3 border border-color h-100">
+                        <div class="small fw-semibold text-danger mb-2 d-flex align-items-center gap-1">
+                            <i data-lucide="trending-up" style="width: 15px; height: 15px;"></i> Areas for Technical Growth
+                        </div>
+                        <ul class="small text-muted ps-3 mb-0" id="reportImprovementsList"></ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Role Study Recommendations -->
+            <div class="p-3 bg-subtle rounded-3 border border-color mb-4">
+                <div class="small fw-semibold text-main mb-2 d-flex align-items-center gap-1">
+                    <i data-lucide="book-open" class="text-primary" style="width: 15px; height: 15px;"></i> Recommended Interview Preparation Topics:
+                </div>
+                <div class="d-flex flex-wrap gap-1.5" id="reportTopicsList"></div>
+            </div>
+
+            <div class="d-flex justify-content-end">
+                <button type="button" class="btn btn-outline-custom" onclick="resetToInterviewSetup()">
+                    Take Another Interview
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Start Interview Card (Visible when idle) -->
+    <div id="startInterviewCard" class="card card-custom p-4 mb-4">
+        <h5 class="fw-bold text-main mb-3 d-flex align-items-center gap-2">
+            <i data-lucide="sliders" class="text-primary" style="width: 18px; height: 18px;"></i> Configure Interview Simulation
+        </h5>
+        <div class="row g-3">
+            <div class="col-md-5">
+                <label class="form-label text-muted small fw-semibold">Target Tech Role</label>
+                <input type="text" id="setupTargetRole" class="form-control bg-subtle text-main border-color"
+                       placeholder="e.g. Data Analyst, Java Developer, ML Engineer, Full Stack..." value="Data Analyst">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label text-muted small fw-semibold">Experience Level</label>
+                <select id="setupDifficulty" class="form-select bg-subtle text-main border-color">
+                    <option value="Fresher">Fresher / Entry-Level (0-2 Yrs)</option>
+                    <option value="Intermediate" selected>Mid-Level (2-5 Yrs)</option>
+                    <option value="Senior">Senior / Lead (5+ Yrs)</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label text-muted small fw-semibold">Interview Focus</label>
+                <select id="setupType" class="form-select bg-subtle text-main border-color">
+                    <option value="Technical" selected>Core Technical & Architecture</option>
+                    <option value="Scenario">Scenario & Problem Solving</option>
+                    <option value="Behavioral">Behavioral (STAR Method)</option>
+                </select>
+            </div>
+            <div class="col-12 mt-3">
+                <button type="button" class="btn btn-primary-custom w-100 py-2.5 d-inline-flex align-items-center justify-content-center gap-2 fw-semibold" id="launchBtn" onclick="launchInterview()">
+                    <i data-lucide="play" style="width: 18px; height: 18px;"></i> Launch Interactive AI Simulation
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Previous Interview Sessions History Table -->
+    <div class="card card-custom p-4">
+        <h5 class="fw-bold text-main mb-3 d-flex align-items-center gap-2">
+            <i data-lucide="history" class="text-primary" style="width: 18px; height: 18px;"></i> Past Interview Simulation History
+        </h5>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0 text-main">
+                <thead>
+                    <tr class="text-muted small border-color">
+                        <th>Target Role</th>
+                        <th>Level</th>
+                        <th>Type</th>
+                        <th>Status</th>
+                        <th>Score</th>
+                        <th>Date</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody id="sessionsTableBody">
+                    {% if sessions %}
+                        {% for s in sessions %}
+                        <tr class="border-color">
+                            <td class="fw-semibold text-main">{{ s.target_role.title() }}</td>
+                            <td><span class="badge bg-subtle text-muted">{{ s.difficulty }}</span></td>
+                            <td><span class="badge bg-subtle text-accent">{{ s.interview_type }}</span></td>
+                            <td>
+                                {% if s.status == 'completed' %}
+                                    <span class="badge bg-success-subtle text-success">Completed</span>
+                                {% else %}
+                                    <span class="badge bg-warning-subtle text-warning">In Progress</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if s.final_report and s.final_report.get('overall_score') %}
+                                    <strong class="text-primary">{{ s.final_report.get('overall_score') }}/100</strong>
+                                {% else %}
+                                    <span class="text-muted">--</span>
+                                {% endif %}
+                            </td>
+                            <td class="small text-muted">{{ s.created_at[:10] if s.created_at else '' }}</td>
+                            <td>
+                                {% if s.status == 'completed' and s.final_report %}
+                                    <button class="btn btn-sm btn-subtle text-primary" onclick="viewSessionReport({{ s.id }})">
+                                        View Report
+                                    </button>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="7" class="text-center text-muted py-4">No past interview sessions yet. Start your first simulation above!</td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let currentSessionId = null;
+let currentQuestionIndex = 0;
+let totalQuestions = 5;
+let currentQuestionData = null;
+let nextQuestionData = null;
+let recognition = null;
+let isRecording = false;
+
+function showNewInterviewModal() {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    document.getElementById('setupTargetRole').focus();
+}
+
+function resetToInterviewSetup() {
+    document.getElementById('activeInterviewSection').classList.add('d-none');
+    document.getElementById('finalReportSection').classList.add('d-none');
+    document.getElementById('startInterviewCard').classList.remove('d-none');
+    currentSessionId = null;
+}
+
+async function launchInterview() {
+    const role = document.getElementById('setupTargetRole').value.trim() || 'Software Engineer';
+    const difficulty = document.getElementById('setupDifficulty').value;
+    const type = document.getElementById('setupType').value;
+    const launchBtn = document.getElementById('launchBtn');
+
+    launchBtn.disabled = true;
+    launchBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Initializing AI Interviewer & Questions...';
+
+    try {
+        const res = await fetch('/api/interview/start', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCsrfToken(),
+                'X-CSRF-Token': getCsrfToken()
+            },
+            body: JSON.stringify({
+                target_role: role,
+                difficulty: difficulty,
+                interview_type: type
+            })
+        });
+
+        const data = await res.json();
+        if (res.ok && data.success) {
+            currentSessionId = data.session_id;
+            currentQuestionIndex = 0;
+            totalQuestions = data.total_questions || 5;
+
+            document.getElementById('startInterviewCard').classList.add('d-none');
+            document.getElementById('finalReportSection').classList.add('d-none');
+            document.getElementById('activeInterviewSection').classList.remove('d-none');
+
+            document.getElementById('interviewMetaBadge').innerText = `${data.interview_type} • ${data.difficulty}`;
+            displayQuestion(data.current_question, 0);
+        } else {
+            alert(data.error || 'Failed to start interview simulation.');
+        }
+    } catch (e) {
+        console.error('Launch error:', e);
+        alert('Network error while starting interview.');
+    } finally {
+        launchBtn.disabled = false;
+        launchBtn.innerHTML = '<i data-lucide="play" style="width: 18px; height: 18px;"></i> Launch Interactive AI Simulation';
+        if (window.lucide) lucide.createIcons();
+    }
+}
+
+function displayQuestion(q, idx) {
+    currentQuestionData = q;
+    currentQuestionIndex = idx;
+
+    document.getElementById('questionStepBadge').innerText = `Question ${idx + 1} of ${totalQuestions}`;
+    const pct = Math.round(((idx + 1) / totalQuestions) * 100);
+    document.getElementById('interviewProgressBar').style.width = `${pct}%`;
+
+    document.getElementById('questionTypeLabel').innerText = (q.type || 'technical').replace('_', ' ').toUpperCase();
+    document.getElementById('currentQuestionText').innerText = q.question;
+    document.getElementById('questionFocusText').innerText = q.focus ? `Focus: ${q.focus}` : '';
+
+    // Reset answer inputs
+    document.getElementById('candidateAnswerText').value = '';
+    document.getElementById('answerInputContainer').classList.remove('d-none');
+    document.getElementById('turnEvaluationContainer').classList.add('d-none');
+    document.getElementById('submitAnswerBtn').disabled = false;
+    document.getElementById('submitAnswerBtn').innerHTML = '<i data-lucide="send" style="width: 15px; height: 15px;"></i> Submit Answer for Evaluation';
+
+    if (window.lucide) lucide.createIcons();
+    speakCurrentQuestion();
+}
+
+function speakCurrentQuestion() {
+    if (!currentQuestionData) return;
+    if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(currentQuestionData.question);
+        utterance.lang = 'en-US';
+        utterance.rate = 1.0;
+        window.speechSynthesis.speak(utterance);
+    }
+}
+
+function toggleSpeechRecognition() {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+        alert('Speech recognition is not supported in this browser. Please type your answer.');
+        return;
+    }
+
+    if (isRecording) {
+        recognition.stop();
+        isRecording = false;
+        document.getElementById('micLabel').innerText = 'Speak Answer';
+        document.getElementById('micBtn').className = 'btn btn-sm btn-outline-custom d-inline-flex align-items-center gap-1';
+        return;
+    }
+
+    recognition = new SpeechRecognition();
+    recognition.lang = 'en-US';
+    recognition.continuous = true;
+    recognition.interimResults = false;
+
+    recognition.onresult = (event) => {
+        const transcript = event.results[event.results.length - 1][0].transcript;
+        const textarea = document.getElementById('candidateAnswerText');
+        textarea.value = (textarea.value ? textarea.value + ' ' : '') + transcript;
+    };
+
+    recognition.onerror = () => {
+        isRecording = false;
+        document.getElementById('micLabel').innerText = 'Speak Answer';
+        document.getElementById('micBtn').className = 'btn btn-sm btn-outline-custom d-inline-flex align-items-center gap-1';
+    };
+
+    recognition.start();
+    isRecording = true;
+    document.getElementById('micLabel').innerText = 'Listening... (Click to stop)';
+    document.getElementById('micBtn').className = 'btn btn-sm btn-danger d-inline-flex align-items-center gap-1';
+}
+
+async function submitAnswer() {
+    const answer = document.getElementById('candidateAnswerText').value.trim();
+    if (!answer) {
+        alert('Please enter or speak your answer before submitting.');
+        return;
+    }
+
+    if (isRecording && recognition) {
+        recognition.stop();
+        isRecording = false;
+        document.getElementById('micLabel').innerText = 'Speak Answer';
+        document.getElementById('micBtn').className = 'btn btn-sm btn-outline-custom d-inline-flex align-items-center gap-1';
+    }
+
+    const submitBtn = document.getElementById('submitAnswerBtn');
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Evaluating Answer...';
+
+    try {
+        const res = await fetch('/api/interview/answer', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCsrfToken(),
+                'X-CSRF-Token': getCsrfToken()
+            },
+            body: JSON.stringify({
+                session_id: currentSessionId,
+                answer: answer
+            })
+        });
+
+        const data = await res.json();
+        if (res.ok && data.success) {
+            displayTurnEvaluation(data);
+        } else {
+            alert(data.error || 'Evaluation failed. Please try again.');
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<i data-lucide="send" style="width: 15px; height: 15px;"></i> Submit Answer for Evaluation';
+        }
+    } catch (e) {
+        console.error('Answer submission error:', e);
+        alert('Network error submitting answer.');
+        submitBtn.disabled = false;
+    }
+}
+
+function displayTurnEvaluation(data) {
+    const evalData = data.turn_evaluation || {};
+    const rubric = evalData.rubric || {};
+
+    document.getElementById('turnScoreBadge').innerText = `Score: ${evalData.score || 0}/10`;
+    document.getElementById('turnCorrectness').innerText = `${rubric.correctness || 0}/10`;
+    document.getElementById('turnRelevance').innerText = `${rubric.relevance || 0}/10`;
+    document.getElementById('turnCompleteness').innerText = `${rubric.completeness || 0}/10`;
+    document.getElementById('turnDepth').innerText = `${rubric.technical_depth || 0}/10`;
+    document.getElementById('turnComm').innerText = `${rubric.communication || 0}/10`;
+
+    document.getElementById('turnFeedbackText').innerText = evalData.feedback || 'Good attempt.';
+    const idealList = document.getElementById('turnIdealPointsList');
+    idealList.innerHTML = (evalData.ideal_points || []).map(p => `<li>${p}</li>`).join('');
+
+    const nextBtn = document.getElementById('nextQuestionBtn');
+    if (data.status === 'completed') {
+        nextBtn.innerHTML = 'View Final Performance Report <i data-lucide="award" style="width: 15px; height: 15px;"></i>';
+        nextQuestionData = null;
+        window.finalReportData = data.final_report;
+    } else {
+        nextBtn.innerHTML = 'Next Question <i data-lucide="arrow-right" style="width: 15px; height: 15px;"></i>';
+        nextQuestionData = {
+            question: data.next_question,
+            index: data.current_question_index
+        };
+    }
+
+    document.getElementById('turnEvaluationContainer').classList.remove('d-none');
+    if (window.lucide) lucide.createIcons();
+}
+
+function advanceToNextQuestion() {
+    if (nextQuestionData && nextQuestionData.question) {
+        displayQuestion(nextQuestionData.question, nextQuestionData.index);
+    } else if (window.finalReportData) {
+        displayFinalReport(window.finalReportData);
+    }
+}
+
+function displayFinalReport(report) {
+    document.getElementById('activeInterviewSection').classList.add('d-none');
+    document.getElementById('finalReportSection').classList.remove('d-none');
+
+    document.getElementById('reportOverallScore').innerText = report.overall_score || 0;
+    document.getElementById('reportReadinessLevel').innerText = report.readiness_level || 'Job Ready';
+
+    // Rubric averages
+    const rubRow = document.getElementById('reportRubricRow');
+    rubRow.innerHTML = '';
+    const rubrics = report.rubric_averages || {};
+    for (const [k, v] of Object.entries(rubrics)) {
+        rubRow.innerHTML += `
+            <div class="col">
+                <div class="p-2 bg-card rounded border border-color">
+                    <small class="text-muted d-block text-capitalize">${k.replace('_', ' ')}</small>
+                    <strong class="text-primary">${v}/10</strong>
+                </div>
+            </div>
+        `;
+    }
+
+    // Strengths & Improvements
+    const strengthsList = document.getElementById('reportStrengthsList');
+    strengthsList.innerHTML = (report.strengths || []).map(s => `<li>${s}</li>`).join('');
+
+    const improvementsList = document.getElementById('reportImprovementsList');
+    improvementsList.innerHTML = (report.improvements || []).map(i => `<li>${i}</li>`).join('');
+
+    // Recommended topics
+    const topicsList = document.getElementById('reportTopicsList');
+    topicsList.innerHTML = (report.recommended_topics || []).map(t => `<span class="badge bg-subtle text-primary border border-color px-2.5 py-1.5">${t}</span>`).join(' ');
+
+    if (window.lucide) lucide.createIcons();
+}
+
+async function viewSessionReport(sessionId) {
+    try {
+        const res = await fetch(`/api/interview/session/${sessionId}`);
+        const data = await res.json();
+        if (res.ok && data.success && data.session && data.session.final_report) {
+            displayFinalReport(data.session.final_report);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        } else {
+            alert('Report not available for this session.');
+        }
+    } catch (e) {
+        console.error(e);
+    }
+}
+</script>
+{% endblock %}

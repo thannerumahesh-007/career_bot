@@ -39,13 +39,13 @@
             <div class="stat-card">
                 <div class="d-flex justify-content-between align-items-center mb-2">
                     <span class="text-muted small fw-semibold">Job Matches</span>
-                    <div class="stat-icon bg-success-bg text-success" style="width:36px; height:36px;">
+                    <div class="stat-icon bg-primary-light text-primary" style="width:36px; height:36px;">
                         <i data-lucide="briefcase" style="width: 18px; height: 18px;"></i>
                     </div>
                 </div>
                 {% if has_resume and skills_count > 0 %}
                 <h3 class="fw-bold mb-0 text-main">{{ matching_jobs_count }} <span class="fs-6 text-muted font-normal">/ {{ total_jobs }}</span></h3>
-                <small class="text-success fw-semibold">Moderate / Strong match</small>
+                <small class="text-primary fw-semibold">Moderate / Strong match</small>
                 {% else %}
                 <h3 class="fw-bold mb-0 text-muted fs-6" style="line-height: 1.4;">Upload resume to calculate matches</h3>
                 <small class="text-muted"><a href="{{ url_for('resume') }}" class="text-primary text-decoration-none">Upload resume</a></small>
@@ -57,7 +57,7 @@
             <div class="stat-card">
                 <div class="d-flex justify-content-between align-items-center mb-2">
                     <span class="text-muted small fw-semibold">Profile Completion</span>
-                    <div class="stat-icon bg-warning-bg text-warning" style="width:36px; height:36px;">
+                    <div class="stat-icon bg-primary-light text-primary" style="width:36px; height:36px;">
                         <i data-lucide="pie-chart" style="width: 18px; height: 18px;"></i>
                     </div>
                 </div>
@@ -100,7 +100,7 @@
             <div class="card card-custom p-4 h-100">
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <h5 class="fw-bold mb-0 text-main d-flex align-items-center gap-2">
-                        <i data-lucide="sparkles" class="text-warning" style="width: 20px; height: 20px;"></i> Top Recommended Jobs
+                        <i data-lucide="sparkles" class="text-primary" style="width: 20px; height: 20px;"></i> Top Recommended Jobs
                     </h5>
                     <a href="{{ url_for('jobs') }}" class="btn btn-sm btn-outline-custom">View All Jobs</a>
                 </div>

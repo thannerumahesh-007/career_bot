@@ -29,11 +29,6 @@
             </a>
         </li>
         <li class="nav-item">
-            <a class="nav-link {% if active_tab == 'database' %}active{% endif %}" href="{{ url_for('jobs', tab='database') }}">
-                <i data-lucide="database" style="width: 16px; height: 16px;"></i> Existing Database Jobs
-            </a>
-        </li>
-        <li class="nav-item">
             <a class="nav-link {% if active_tab == 'resume-matches' %}active{% endif %}" href="{{ url_for('jobs_resume_matches') }}">
                 <i data-lucide="file-check" style="width: 16px; height: 16px;"></i> Matched to My Resume
             </a>
@@ -95,7 +90,7 @@
                             </span>
                             {% else %}
                             <span class="badge badge-db-job small d-inline-flex align-items-center gap-1">
-                                <i data-lucide="database" style="width: 12px; height: 12px;"></i> {{ job.source or 'Verified Database' }}
+                                <i data-lucide="briefcase" style="width: 12px; height: 12px;"></i> {{ job.source if job.source and 'Database' not in job.source else 'Verified Job' }}
                             </span>
                             {% endif %}
                             <span class="badge bg-subtle text-muted border-color small">{{ job.job_type }} &bull; {{ job.work_mode }}</span>
