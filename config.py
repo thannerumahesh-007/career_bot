@@ -6,6 +6,24 @@ from dotenv import load_dotenv
 BASE_DIR = Path(__file__).resolve().parent
 load_dotenv(BASE_DIR / ".env", override=True)
 
+def normalize_database_uri(uri: str) -> str:
+    """
+    Normalizes database URIs for cloud deployment compatibility.
+    Ensures PostgreSQL connections use the installed psycopg2-binary driver
+    (e.g., converts postgres://, postgresql://, or postgresql+psycopg:// to postgresql+psycopg2://)
+    while preserving sqlite:// and other explicit dialect drivers.
+    """
+    if not uri:
+        return uri
+    if uri.startswith("postgres://"):
+        return uri.replace("postgres://", "postgresql+psycopg2://", 1)
+    if uri.startswith("postgresql+psycopg://"):
+        return uri.replace("postgresql+psycopg://", "postgresql+psycopg2://", 1)
+    if uri.startswith("postgresql://"):
+        return uri.replace("postgresql://", "postgresql+psycopg2://", 1)
+    return uri
+
+
 class Config:
     """Application Configuration Settings for CareerBot."""
     DEBUG = os.environ.get("FLASK_DEBUG", "").lower() in ("1", "true")
@@ -20,11 +38,9 @@ class Config:
             )
         SECRET_KEY = "careerbot_dev_secret_key_change_in_production"
 
-    # Database configuration with automatic postgres:// -> postgresql:// normalization for cloud providers
+    # Database configuration with automatic PostgreSQL normalization for cloud providers (e.g. Render)
     _raw_db_uri = os.environ.get("DATABASE_URL") or os.environ.get("DATABASE_URI") or f"sqlite:///{BASE_DIR / 'careerbot.db'}"
-    if _raw_db_uri.startswith("postgres://"):
-        _raw_db_uri = _raw_db_uri.replace("postgres://", "postgresql://", 1)
-    SQLALCHEMY_DATABASE_URI = _raw_db_uri
+    SQLALCHEMY_DATABASE_URI = normalize_database_uri(_raw_db_uri)
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     
     # Session & Cookie Security Settings
