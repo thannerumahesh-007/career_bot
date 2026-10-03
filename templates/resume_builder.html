@@ -194,7 +194,7 @@
 
                     <div class="progress mb-3" style="height: 12px; background-color: var(--bg-subtle);">
                         <div class="progress-bar bg-primary progress-bar-striped progress-bar-animated" role="progressbar" 
-                             id="atsProgressBar" style="width: {{ draft.ats_score }}%;"></div>
+                             id="atsProgressBar" style="width: 0%;" data-initial-score="{{ draft.ats_score }}"></div>
                     </div>
 
                     <div class="p-3 bg-subtle rounded-3 mb-3 border border-color">
@@ -262,10 +262,15 @@
 {% endblock %}
 
 {% block scripts %}
+<script type="application/json" id="draftData">{{ draft|tojson|safe }}</script>
 <script>
-let currentDraft = {{ draft|tojson }};
+let currentDraft = JSON.parse(document.getElementById('draftData').textContent || '{}');
 
 document.addEventListener('DOMContentLoaded', () => {
+    const initialBar = document.getElementById('atsProgressBar');
+    if (initialBar && initialBar.dataset.initialScore) {
+        initialBar.style.width = `${initialBar.dataset.initialScore}%`;
+    }
     populateFormFromDraft(currentDraft);
     triggerScoreRecalc();
 });

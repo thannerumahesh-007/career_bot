@@ -268,7 +268,7 @@
                             <td class="small text-muted">{{ s.created_at[:10] if s.created_at else '' }}</td>
                             <td>
                                 {% if s.status == 'completed' and s.final_report %}
-                                    <button class="btn btn-sm btn-subtle text-primary" onclick="viewSessionReport({{ s.id }})">
+                                    <button class="btn btn-sm btn-subtle text-primary" onclick="viewSessionReport('{{ s.id }}')">
                                         View Report
                                     </button>
                                 {% endif %}
